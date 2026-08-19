@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Message Templates — CallBridge{% endblock %}
+
+{% block body %}
+<div class="container page">
+  <div class="page-header">
+    <div>
+      <h1>Message templates</h1>
+      <p>Customize the texts CallBridge sends on your behalf. Use <code>{{ '{business_name}' }}</code> anywhere you want your business name inserted.</p>
+    </div>
+    <a href="/dashboard" class="btn btn-secondary btn-sm">Back to dashboard</a>
+  </div>
+
+  {% if saved %}
+  <div class="alert" style="background: var(--success-bg); color: var(--success); max-width: 640px;">Saved.</div>
+  {% endif %}
+
+  <form method="post" action="/dashboard/settings" style="max-width: 640px;">
+    <div class="card card-pad section">
+      <label for="missed_call_message">Missed-call auto-reply</label>
+      <p style="margin-top: -0.4rem;">Sent immediately when a call goes unanswered.</p>
+      <textarea id="missed_call_message" name="missed_call_message" rows="3" class="template-input">{{ missed_call_message }}</textarea>
+      <div class="char-count" data-for="missed_call_message"></div>
+    </div>
+
+    <div class="card card-pad section">
+      <label for="review_request_message">Review request</label>
+      <p style="margin-top: -0.4rem;">Sent 24 hours after a job is marked complete.</p>
+      <textarea id="review_request_message" name="review_request_message" rows="3" class="template-input">{{ review_request_message }}</textarea>
+      <div class="char-count" data-for="review_request_message"></div>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Save templates</button>
+  </form>
+</div>
+
+<script>
+  function updateCount(textarea) {
+    const counter = document.querySelector('.char-count[data-for="' + textarea.id + '"]');
+    const len = textarea.value.length;
+    counter.textContent = len + ' characters' + (len > 160 ? ' — this will send as multiple SMS segments' : '');
+    counter.classList.toggle('char-count-warn', len > 160);
+  }
+  document.querySelectorAll('.template-input').forEach(function (el) {
+    updateCount(el);
+    el.addEventListener('input', function () { updateCount(el); });
+  });
+</script>
+{% endblock %}

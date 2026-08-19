@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — CallBridge{% endblock %}
+
+{% block body %}
+<div class="container page">
+
+  <div class="page-header">
+    <div>
+      <h1>{{ business.name }}</h1>
+      <p>Missed calls, replies, and jobs at a glance.</p>
+    </div>
+  </div>
+
+  <div class="stat-grid">
+    <div class="stat-card">
+      <div class="stat-label">Missed calls</div>
+      <div class="stat-value">{{ stats.missed }}</div>
+      <div class="stat-sub">last 7 days</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Answered calls</div>
+      <div class="stat-value">{{ stats.answered }}</div>
+      <div class="stat-sub">last 7 days</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Texts sent</div>
+      <div class="stat-value">{{ stats.texts_sent }}</div>
+      <div class="stat-sub">
+        {% if stats.response_rate is not none %}{{ stats.response_rate }}% response rate{% else %}last 7 days{% endif %}
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Jobs completed</div>
+      <div class="stat-value">{{ stats.jobs_done }}</div>
+      <div class="stat-sub">last 7 days</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <h2>Calls</h2>
+    </div>
+
+    <form class="filter-bar" method="get" action="/dashboard">
+      <div class="field grow">
+        <label for="phone">Phone number</label>
+        <input type="text" id="phone" name="phone" placeholder="Search caller or customer number" value="{{ filter_phone }}">
+      </div>
+      <div class="field">
+        <label for="status">Status</label>
+        <select id="status" name="status">
+          <option value="" {% if not filter_status %}selected{% endif %}>All</option>
+          <option value="missed" {% if filter_status == "missed" %}selected{% endif %}>Missed</option>
+          <option value="answered" {% if filter_status == "answered" %}selected{% endif %}>Answered</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="days">Date range</label>
+        <select id="days" name="days">
+          <option value="7" {% if filter_days == "7" %}selected{% endif %}>Last 7 days</option>
+          <option value="30" {% if filter_days == "30" %}selected{% endif %}>Last 30 days</option>
+          <option value="90" {% if filter_days == "90" %}selected{% endif %}>Last 90 days</option>
+          <option value="all" {% if filter_days == "all" %}selected{% endif %}>All time</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-secondary">Filter</button>
+    </form>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Time</th><th>Caller</th><th>Status</th><th>Text reply</th></tr>
+        </thead>
+        <tbody>
+          {% for call in calls %}
+          <tr>
+            <td>{{ call.timestamp.strftime("%b %-d, %-I:%M %p") }}</td>
+            <td>{{ call.caller_number }}</td>
+            <td><span class="badge badge-{{ call.status }}">{{ call.status }}</span></td>
+            <td class="wrap">
+              <div class="thread">
+                {% for text in texts_by_call.get(call.id, []) %}
+                  <div class="thread-msg"><span class="badge badge-{{ text.status }}">{{ text.status }}</span> {{ text.body }}</div>
+                {% else %}
+                  <span style="color: var(--text-faint);">&mdash;</span>
+                {% endfor %}
+              </div>
+              <form class="reply-form" method="post" action="/dashboard/calls/{{ call.id }}/reply">
+                <input type="hidden" name="phone" value="{{ filter_phone }}">
+                <input type="hidden" name="status" value="{{ filter_status }}">
+                <input type="hidden" name="days" value="{{ filter_days }}">
+                <input type="text" name="body" placeholder="Reply to {{ call.caller_number }}" maxlength="1600" required>
+                <button type="submit" class="btn btn-secondary btn-sm">Send</button>
+              </form>
+            </td>
+          </tr>
+          {% else %}
+          <tr class="empty-row"><td colspan="4">No calls match these filters.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <h2>Jobs</h2>
+    </div>
+
+    <form class="inline-form" method="post" action="/dashboard/jobs" style="margin-bottom: 1rem;">
+      <input type="text" name="customer_phone" placeholder="Customer phone (e.g. +15551234567)" required>
+      <input type="hidden" name="phone" value="{{ filter_phone }}">
+      <input type="hidden" name="status" value="{{ filter_status }}">
+      <input type="hidden" name="days" value="{{ filter_days }}">
+      <button type="submit" class="btn btn-primary">Add job</button>
+    </form>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Customer</th><th>Added</th><th>Status</th><th>Review text</th><th></th></tr>
+        </thead>
+        <tbody>
+          {% for job in jobs %}
+          <tr>
+            <td>{{ job.customer_phone }}</td>
+            <td>{{ job.created_at.strftime("%b %-d, %-I:%M %p") }}</td>
+            <td>
+              {% if job.completed_at %}
+                <span class="badge badge-answered">done</span> {{ job.completed_at.strftime("%b %-d") }}
+              {% else %}
+                <span class="badge badge-pending">in progress</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if not job.completed_at %}
+                <span style="color: var(--text-faint);">&mdash;</span>
+              {% elif job.review_text_sent_at %}
+                <span class="badge badge-sent">sent</span> {{ job.review_text_sent_at.strftime("%b %-d") }}
+              {% else %}
+                <span class="badge badge-pending">pending</span> in 24h
+              {% endif %}
+            </td>
+            <td>
+              {% if not job.completed_at %}
+              <form method="post" action="/dashboard/jobs/{{ job.id }}/complete">
+                <input type="hidden" name="phone" value="{{ filter_phone }}">
+                <input type="hidden" name="status" value="{{ filter_status }}">
+                <input type="hidden" name="days" value="{{ filter_days }}">
+                <button type="submit" class="btn btn-secondary btn-sm">Mark Complete</button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr class="empty-row"><td colspan="5">No jobs logged yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Admin — Businesses{% endblock %}
+
+{% block nav %}
+<div class="topnav">
+  <div class="topnav-inner">
+    <span class="brand">
+      <span class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+        </svg>
+      </span>
+      CallBridge Admin
+    </span>
+    <div class="nav-right">
+      <a href="/admin/logout" class="btn btn-secondary btn-sm">Log out</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block body %}
+<div class="container page">
+  <div class="page-header">
+    <div>
+      <h1>Businesses</h1>
+      <p>Add a new client and their Twilio number.</p>
+    </div>
+  </div>
+
+  {% if error %}<div class="alert" style="max-width: 600px;">{{ error }}</div>{% endif %}
+
+  <div class="section">
+    <div class="card card-pad" style="max-width: 600px;">
+      <form method="post" action="/admin/businesses">
+        <div class="field">
+          <label for="name">Business name</label>
+          <input type="text" id="name" name="name" required>
+        </div>
+        <div class="field">
+          <label for="owner_email">Owner email</label>
+          <input type="email" id="owner_email" name="owner_email" required>
+        </div>
+        <div class="field">
+          <label for="owner_phone">Owner phone</label>
+          <input type="tel" id="owner_phone" name="owner_phone" placeholder="+15551234567" required>
+        </div>
+        <div class="field">
+          <label for="password">Temporary password</label>
+          <input type="text" id="password" name="password" required>
+        </div>
+        <div class="field">
+          <label for="twilio_number">Twilio number</label>
+          <input type="tel" id="twilio_number" name="twilio_number" placeholder="+15551234567" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Add business</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Existing businesses</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Name</th><th>Owner email</th><th>Twilio number</th><th>Plan</th><th>Added</th></tr>
+        </thead>
+        <tbody>
+          {% for b in businesses %}
+          <tr>
+            <td>{{ b.name }}</td>
+            <td>{{ b.owner_email }}</td>
+            <td>{{ b.twilio_number }}</td>
+            <td>{{ b.plan_tier }}</td>
+            <td>{{ b.created_at.strftime("%b %-d, %Y") }}</td>
+          </tr>
+          {% else %}
+          <tr class="empty-row"><td colspan="5">No businesses yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

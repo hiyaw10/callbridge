@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}CallBridge — Never miss another customer call{% endblock %}
+
+{% block body %}
+<div class="container">
+
+  <section class="hero">
+    <h1>Every missed call still becomes a customer.</h1>
+    <p class="lede">CallBridge watches your business line. The moment a call goes unanswered, it texts the caller back automatically — before they've moved on to whoever picks up next.</p>
+    <div class="hero-actions">
+      <a href="/login" class="btn btn-primary">Log in to your dashboard</a>
+      <a href="#how-it-works" class="btn btn-secondary">See how it works</a>
+    </div>
+    <p style="margin-top: 1.5rem; font-size: 0.85rem; color: var(--text-faint);">
+      Built for plumbers, electricians, HVAC techs, auto shops, salons, vets, and chiropractors — any local business that lives on the phone.
+    </p>
+  </section>
+
+  <div class="example-sms">
+    <div class="from">Automatic reply &middot; sent in seconds</div>
+    <div class="bubble">Sorry we missed you — this is [Your Business], how can we help?</div>
+  </div>
+
+  <section id="how-it-works">
+    <h2 class="section-title" style="text-align:center; font-size:1.5rem;">How it works</h2>
+    <p class="section-subtitle">No new number, no new hardware — CallBridge sits on top of the line you already use.</p>
+    <div class="steps">
+      <div class="card step-card">
+        <div class="step-num">1</div>
+        <h3>Connect your number</h3>
+        <p>Your existing business line is connected through Twilio in a few minutes. Customers keep dialing the same number they always have.</p>
+      </div>
+      <div class="card step-card">
+        <div class="step-num">2</div>
+        <h3>We catch every missed call</h3>
+        <p>The instant a call goes unanswered, CallBridge knows — no manual checking of voicemail, no missed messages.</p>
+      </div>
+      <div class="card step-card">
+        <div class="step-num">3</div>
+        <h3>The customer hears back immediately</h3>
+        <p>A text goes out in seconds, so you're already in the conversation instead of losing the business to whoever calls back first.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="section-title" style="text-align:center; font-size:1.5rem;">Built for how local service businesses actually run</h2>
+    <p class="section-subtitle">One dashboard for every call, every reply, and every job — no app to install, no training required.</p>
+    <div class="steps">
+      <div class="card step-card">
+        <h3>Every call logged automatically</h3>
+        <p>See missed and answered calls as they happen, with the auto-reply sent for each one right alongside it.</p>
+      </div>
+      <div class="card step-card">
+        <h3>Review requests that send themselves</h3>
+        <p>Mark a job done and CallBridge follows up a day later asking for a Google review — no sticky notes required.</p>
+      </div>
+      <div class="card step-card">
+        <h3>A weekly check-in</h3>
+        <p>A short text every week tells you exactly how many calls you missed — so you always know what it's saving you.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="section-title" style="text-align:center; font-size:1.5rem;">Plans for every size business</h2>
+    <p class="section-subtitle">From a single operator to multiple locations.</p>
+    <div class="plans">
+      <div class="card plan-card">
+        <h3>Starter</h3>
+        <p class="plan-tagline">For solo operators and small teams getting the basics automated.</p>
+        <ul class="plan-features">
+          <li>Missed-call text-back</li>
+          <li>Call &amp; text dashboard</li>
+          <li>Weekly summary</li>
+        </ul>
+      </div>
+      <div class="card plan-card featured">
+        <span class="plan-featured-tag">Most popular</span>
+        <h3>Growth</h3>
+        <p class="plan-tagline">For businesses that want every missed call followed all the way to a booking.</p>
+        <ul class="plan-features">
+          <li>Everything in Starter</li>
+          <li>Google review requests</li>
+          <li>Priority support</li>
+        </ul>
+      </div>
+      <div class="card plan-card">
+        <h3>Pro</h3>
+        <p class="plan-tagline">For multi-location businesses running it across every line.</p>
+        <ul class="plan-features">
+          <li>Everything in Growth</li>
+          <li>Multiple business lines</li>
+          <li>Dedicated onboarding</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <div class="cta-band">
+    <h2>Stop losing customers to a missed call.</h2>
+    <p>If you already have a CallBridge account, your dashboard is one click away. New to CallBridge? Call us at <a href="tel:+17126862365" style="color: inherit; text-decoration: underline;">+1 (712) 686-2365</a>.</p>
+    <a href="/login" class="btn btn-primary">Log in</a>
+  </div>
+
+</div>
+{% endblock %}
