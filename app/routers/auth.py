@@ -10,12 +10,14 @@ from app.auth import hash_password, verify_password
 from app.config import ENVIRONMENT, TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN
 from app.db import get_db
 from app.models import Business
+from app.rate_limit import limiter
 from app.services.sms import send_sms
 from app.templates_env import templates
 
 router = APIRouter()
 
 RESET_CODE_TTL_MINUTES = 15
+MAX_RESET_ATTEMPTS = 5
 
 
 def _normalize_email(email: str) -> str:
@@ -40,6 +42,7 @@ def login_form(request: Request, reset: str = ""):
 
 
 @router.post("/login")
+@limiter.limit("10/minute")
 def login_submit(
     request: Request,
     email: str = Form(...),
@@ -70,6 +73,7 @@ def forgot_password_form(request: Request):
 
 
 @router.post("/forgot-password")
+@limiter.limit("5/minute")
 def forgot_password_submit(
     request: Request,
     email: str = Form(...),
@@ -84,6 +88,7 @@ def forgot_password_submit(
         business.password_reset_expires_at = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(
             minutes=RESET_CODE_TTL_MINUTES
         )
+        business.password_reset_attempts = 0
         db.add(business)
         db.commit()
         send_sms(
@@ -111,6 +116,7 @@ def reset_password_form(request: Request, email: str = "", dev_code: str = ""):
 
 
 @router.post("/reset-password")
+@limiter.limit("10/minute")
 def reset_password_submit(
     request: Request,
     email: str = Form(...),
@@ -120,21 +126,37 @@ def reset_password_submit(
 ):
     business = _find_business_by_email(db, email)
     now = datetime.now(timezone.utc).replace(tzinfo=None)
-    code_matches = business and business.password_reset_code and secrets.compare_digest(
-        business.password_reset_code, code.strip()
+
+    too_many_attempts = business and business.password_reset_attempts >= MAX_RESET_ATTEMPTS
+    code_matches = (
+        business
+        and not too_many_attempts
+        and business.password_reset_code
+        and secrets.compare_digest(business.password_reset_code, code.strip())
     )
     not_expired = business and business.password_reset_expires_at and business.password_reset_expires_at > now
+
     if not (code_matches and not_expired):
+        if business and not too_many_attempts:
+            business.password_reset_attempts += 1
+            db.add(business)
+            db.commit()
+        error = (
+            "Too many attempts. Request a new code."
+            if too_many_attempts
+            else "That code is invalid or has expired."
+        )
         return templates.TemplateResponse(
             request,
             "reset_password.html",
-            {"error": "That code is invalid or has expired.", "email": email},
+            {"error": error, "email": email},
             status_code=400,
         )
 
     business.password_hash = hash_password(password)
     business.password_reset_code = None
     business.password_reset_expires_at = None
+    business.password_reset_attempts = 0
     db.add(business)
     db.commit()
     return RedirectResponse(url="/login?reset=1", status_code=303)
