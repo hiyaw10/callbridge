@@ -28,6 +28,7 @@ class Business(Base):
     # Forgot-password: single-use SMS code, cleared after use or when a new one is requested.
     password_reset_code: Mapped[str | None] = mapped_column(String(6), nullable=True)
     password_reset_expires_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    password_reset_attempts: Mapped[int] = mapped_column(default=0, server_default="0")
 
     calls: Mapped[list["Call"]] = relationship(back_populates="business")
     text_messages: Mapped[list["TextMessage"]] = relationship(back_populates="business")
