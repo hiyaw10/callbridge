@@ -75,6 +75,7 @@ def dashboard(
 
 @router.post("/dashboard/calls/{call_id}/reply")
 def reply_to_call(
+    request: Request,
     call_id: int,
     body: str = Form(...),
     phone: str = Form(""),
@@ -88,7 +89,7 @@ def reply_to_call(
         raise HTTPException(status_code=404)
     body = body.strip()
     if body:
-        send_sms(db, business, call.caller_number, body, call_id=call.id)
+        send_sms(db, business, call.caller_number, body, call_id=call.id, request=request)
     return RedirectResponse(url=_dashboard_url(phone, status, days), status_code=303)
 
 
@@ -186,12 +187,16 @@ def _weekly_stats(db: Session, business: Business) -> dict:
     missed = calls_this_week.filter(Call.status == "missed").count()
     answered = calls_this_week.filter(Call.status == "answered").count()
 
+    # "sent" and "delivered" both mean the text actually went out — sent is the initial
+    # optimistic state and delivered is what Twilio's status callback upgrades it to.
+    # undelivered/failed (e.g. an unverified toll-free number) must NOT count as sent,
+    # otherwise the dashboard reports texts that never reached anyone.
     texts_sent = (
         db.query(TextMessage)
         .filter(
             TextMessage.business_id == business.id,
             TextMessage.call_id.isnot(None),
-            TextMessage.status == "sent",
+            TextMessage.status.in_(("sent", "delivered")),
             TextMessage.timestamp >= week_ago,
         )
         .count()
@@ -204,7 +209,7 @@ def _weekly_stats(db: Session, business: Business) -> dict:
         .join(Call, Call.id == TextMessage.call_id)
         .filter(
             TextMessage.business_id == business.id,
-            TextMessage.status == "sent",
+            TextMessage.status.in_(("sent", "delivered")),
             Call.status == "missed",
             Call.timestamp >= week_ago,
         )

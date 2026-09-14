@@ -212,7 +212,7 @@ td.wrap { white-space: normal; }
 .badge-missed { background: var(--danger-bg); color: var(--danger); }
 .badge-answered { background: var(--success-bg); color: var(--success); }
 .badge-sent, .badge-delivered { background: var(--success-bg); color: var(--success); }
-.badge-failed { background: var(--danger-bg); color: var(--danger); }
+.badge-failed, .badge-undelivered { background: var(--danger-bg); color: var(--danger); }
 .badge-pending { background: var(--neutral-bg); color: var(--text-muted); }
 
 /* --- Add job inline form --- */

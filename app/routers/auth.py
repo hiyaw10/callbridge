@@ -96,6 +96,7 @@ def forgot_password_submit(
             business,
             business.owner_phone,
             f"Your CallBridge password reset code is {code}. It expires in {RESET_CODE_TTL_MINUTES} minutes.",
+            request=request,
         )
         # No live Twilio account connected — nothing was actually texted, so surface the
         # code directly instead of leaving the page looking like it silently did nothing.

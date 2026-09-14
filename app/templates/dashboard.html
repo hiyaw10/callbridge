@@ -80,7 +80,7 @@
             <td class="wrap">
               <div class="thread">
                 {% for text in texts_by_call.get(call.id, []) %}
-                  <div class="thread-msg"><span class="badge badge-{{ text.status }}">{{ text.status }}</span> {{ text.body }}</div>
+                  <div class="thread-msg"><span class="badge badge-{{ text.status }}"{% if text.error_code %} title="Twilio error {{ text.error_code }}"{% endif %}>{{ text.status }}{% if text.error_code %} ({{ text.error_code }}){% endif %}</span> {{ text.body }}</div>
                 {% else %}
                   <span style="color: var(--text-faint);">&mdash;</span>
                 {% endfor %}
