@@ -22,4 +22,9 @@ SECRET_KEY = os.environ.get("SECRET_KEY", DEV_DEFAULT_SECRET_KEY)
 TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID", "")
 TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN", "")
 
+# Used by send_sms to build the Twilio delivery-status callback URL when there's no live
+# request to derive it from (scripts/review_requests.py, scripts/weekly_summary.py — both run
+# standalone via cron, outside a web request). e.g. https://callbridge-production-xxxx.up.railway.app
+PUBLIC_BASE_URL = os.environ.get("PUBLIC_BASE_URL", "").rstrip("/")
+
 SENTRY_DSN = os.environ.get("SENTRY_DSN", "")

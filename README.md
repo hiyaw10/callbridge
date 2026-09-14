@@ -88,6 +88,7 @@ double-text).
 | `ENVIRONMENT` | `development` shows local-only debug hints (demo login, reset-code fallback) and enables `/docs`. Set to `production` on Railway — this also makes session cookies HTTPS-only and disables `/docs`/`/redoc`/`/openapi.json`. |
 | `ADMIN_TOKEN` | Shared secret gating `/admin` (add-business form). **Must** be a long random value in prod. |
 | `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` | Leave blank locally to simulate SMS and skip webhook signature validation. Set both to go live — required in prod, or webhooks are unauthenticated. |
+| `PUBLIC_BASE_URL` | Your production URL (e.g. `https://your-app.up.railway.app`), no trailing slash. Used to register Twilio's SMS delivery-status callback for texts sent by `scripts/review_requests.py` / `scripts/weekly_summary.py`, which run via cron with no live request to derive the URL from. Without it, a failed send from those scripts shows as "sent" on the dashboard forever instead of self-correcting to undelivered/failed. |
 | `SENTRY_DSN` | Optional. If set, unhandled errors are reported to Sentry in addition to logs. |
 
 The app checks these on startup when `ENVIRONMENT=production` and logs a
@@ -135,6 +136,9 @@ production (e.g. Railway's cron/scheduled service):
    - `SECRET_KEY` — generate with `python3 -c "import secrets; print(secrets.token_hex(32))"`
    - `ADMIN_TOKEN` — generate the same way
    - `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` — from the Twilio Console
+   - `PUBLIC_BASE_URL` — your Railway domain, e.g. `https://your-app.up.railway.app`
+     (also set this on the two cron jobs in step 7 — they share the same env vars
+     as the web service by default, but confirm it's there)
    - `SENTRY_DSN` — optional, from sentry.io if you want error alerts
    - Do **not** set `DATABASE_URL` yourself if Railway's Postgres plugin
      already provides it.

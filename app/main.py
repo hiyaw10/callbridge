@@ -15,6 +15,7 @@ from app.config import (
     DEV_DEFAULT_ADMIN_TOKEN,
     DEV_DEFAULT_SECRET_KEY,
     ENVIRONMENT,
+    PUBLIC_BASE_URL,
     SECRET_KEY,
     SENTRY_DSN,
     TWILIO_ACCOUNT_SID,
@@ -109,6 +110,12 @@ def check_production_config():
         problems.append(
             "TWILIO_ACCOUNT_SID/TWILIO_AUTH_TOKEN are not set — SMS sends will be simulated and "
             "Twilio webhook signature validation will be skipped (unauthenticated webhook)"
+        )
+    if not PUBLIC_BASE_URL:
+        problems.append(
+            "PUBLIC_BASE_URL is not set — review-request and weekly-summary texts (sent via "
+            "cron, not a web request) won't get Twilio delivery-status tracking, so a failed "
+            "send from those scripts will show as \"sent\" on the dashboard forever"
         )
     if problems:
         logger.warning(
