@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Opt-In & Consent Policy — CallBridge{% endblock %}
+
+{% block body %}
+<div class="container" style="padding: 3rem 0 4rem; max-width: 720px;">
+  <h1>Opt-In &amp; Consent Policy</h1>
+  <p class="lede" style="max-width: none;">How CallBridge obtains consent before sending a text message, and who receives one.</p>
+
+  <div class="card card-pad" style="margin: 2rem 0;">
+    <h2>How consent works</h2>
+    <p>CallBridge sends text messages on behalf of local businesses (plumbers, electricians, HVAC, auto shops, salons, vets, chiropractors, and similar). Every message we send falls into one of these categories:</p>
+    <ul style="color: var(--text-muted); line-height: 1.8;">
+      <li><strong>A reply to a missed call.</strong> When someone calls a subscribed business's own published phone number and the call goes unanswered, that business's number automatically sends one text back to the caller. The message is a direct response to the call the person just placed themselves &mdash; it is not sent to any number that hasn't just called that business.</li>
+      <li><strong>A review request.</strong> Sent to a customer's phone number after that business marks a completed job for that customer, as a direct follow-up to service the customer already received.</li>
+      <li><strong>Account messages.</strong> Sent only to the business owner themselves (their own account login, password resets, and a weekly summary of their own call activity).</li>
+    </ul>
+    <p>CallBridge does not send messages to purchased contact lists, does not send unsolicited marketing, and does not text any number that has not either called a subscribed business directly or been added by that business as a customer they completed a job for.</p>
+  </div>
+
+  <div class="card card-pad" style="margin: 2rem 0;">
+    <h2>Opting out</h2>
+    <p>Reply <strong>STOP</strong> to any message at any time to stop receiving further messages from that number.</p>
+  </div>
+
+  <div class="card card-pad" style="margin: 2rem 0;">
+    <h2>Questions</h2>
+    <p style="margin: 0;">Call us at <a href="tel:+17126862365">+1 (712) 686-2365</a>.</p>
+  </div>
+</div>
+{% endblock %}
