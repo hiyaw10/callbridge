@@ -77,6 +77,11 @@ def landing(request: Request):
     return templates.TemplateResponse(request, "landing.html")
 
 
+@fastapi_app.get("/legal/opt-in-policy")
+def opt_in_policy(request: Request):
+    return templates.TemplateResponse(request, "opt_in_policy.html")
+
+
 @fastapi_app.get("/health")
 def health():
     try:
