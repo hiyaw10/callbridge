@@ -27,15 +27,21 @@ def dashboard(
     db: Session = Depends(get_db),
 ):
     phone = phone.strip()
-    status = status if status in ("missed", "answered") else ""
+    status = status if status in ("missed", "answered", "archived") else ""
     days_n = DAYS_OPTIONS.get(days)
     cutoff = _now() - timedelta(days=days_n) if days_n else None
 
     calls_query = db.query(Call).filter(Call.business_id == business.id)
     if phone:
         calls_query = calls_query.filter(Call.caller_number.ilike(f"%{phone}%"))
-    if status:
-        calls_query = calls_query.filter(Call.status == status)
+    if status == "archived":
+        calls_query = calls_query.filter(Call.archived_at.isnot(None))
+    else:
+        # Default view (and the missed/answered filters) excludes archived calls —
+        # archiving is how a business tidies up its dashboard without deleting the record.
+        calls_query = calls_query.filter(Call.archived_at.is_(None))
+        if status:
+            calls_query = calls_query.filter(Call.status == status)
     if cutoff:
         calls_query = calls_query.filter(Call.timestamp >= cutoff)
     calls = calls_query.order_by(Call.timestamp.desc()).limit(100).all()
@@ -90,6 +96,44 @@ def reply_to_call(
     body = body.strip()
     if body:
         send_sms(db, business, call.caller_number, body, call_id=call.id, request=request)
+    return RedirectResponse(url=_dashboard_url(phone, status, days), status_code=303)
+
+
+@router.post("/dashboard/calls/{call_id}/archive")
+def archive_call(
+    call_id: int,
+    phone: str = Form(""),
+    status: str = Form(""),
+    days: str = Form("30"),
+    business: Business = Depends(get_current_business),
+    db: Session = Depends(get_db),
+):
+    call = db.query(Call).filter(Call.id == call_id, Call.business_id == business.id).first()
+    if not call:
+        raise HTTPException(status_code=404)
+    if not call.archived_at:
+        call.archived_at = _now()
+        db.add(call)
+        db.commit()
+    return RedirectResponse(url=_dashboard_url(phone, status, days), status_code=303)
+
+
+@router.post("/dashboard/calls/{call_id}/unarchive")
+def unarchive_call(
+    call_id: int,
+    phone: str = Form(""),
+    status: str = Form(""),
+    days: str = Form("30"),
+    business: Business = Depends(get_current_business),
+    db: Session = Depends(get_db),
+):
+    call = db.query(Call).filter(Call.id == call_id, Call.business_id == business.id).first()
+    if not call:
+        raise HTTPException(status_code=404)
+    if call.archived_at:
+        call.archived_at = None
+        db.add(call)
+        db.commit()
     return RedirectResponse(url=_dashboard_url(phone, status, days), status_code=303)
 
 
@@ -183,7 +227,9 @@ def _now() -> datetime:
 def _weekly_stats(db: Session, business: Business) -> dict:
     week_ago = _now() - timedelta(days=7)
 
-    calls_this_week = db.query(Call).filter(Call.business_id == business.id, Call.timestamp >= week_ago)
+    calls_this_week = db.query(Call).filter(
+        Call.business_id == business.id, Call.timestamp >= week_ago, Call.archived_at.is_(None)
+    )
     missed = calls_this_week.filter(Call.status == "missed").count()
     answered = calls_this_week.filter(Call.status == "answered").count()
 
@@ -193,11 +239,13 @@ def _weekly_stats(db: Session, business: Business) -> dict:
     # otherwise the dashboard reports texts that never reached anyone.
     texts_sent = (
         db.query(TextMessage)
+        .join(Call, Call.id == TextMessage.call_id)
         .filter(
             TextMessage.business_id == business.id,
             TextMessage.call_id.isnot(None),
             TextMessage.status.in_(("sent", "delivered")),
             TextMessage.timestamp >= week_ago,
+            Call.archived_at.is_(None),
         )
         .count()
     )
@@ -212,6 +260,7 @@ def _weekly_stats(db: Session, business: Business) -> dict:
             TextMessage.status.in_(("sent", "delivered")),
             Call.status == "missed",
             Call.timestamp >= week_ago,
+            Call.archived_at.is_(None),
         )
         .distinct()
         .count()

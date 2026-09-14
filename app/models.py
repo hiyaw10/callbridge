@@ -49,6 +49,9 @@ class Call(Base):
     status: Mapped[str] = mapped_column(String(20))  # missed / answered
     twilio_call_sid: Mapped[str] = mapped_column(String(64), unique=True, index=True)
     timestamp: Mapped[datetime] = mapped_column(server_default=func.now(), index=True)
+    # Set when a business owner archives a call off their dashboard. The row (and its texts)
+    # stay in the database for the consent/audit trail — this only hides it from the default view.
+    archived_at: Mapped[datetime | None] = mapped_column(nullable=True)
 
     business: Mapped["Business"] = relationship(back_populates="calls")
     text_messages: Mapped[list["TextMessage"]] = relationship(back_populates="call")

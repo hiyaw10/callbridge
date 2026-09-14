@@ -52,6 +52,7 @@
           <option value="" {% if not filter_status %}selected{% endif %}>All</option>
           <option value="missed" {% if filter_status == "missed" %}selected{% endif %}>Missed</option>
           <option value="answered" {% if filter_status == "answered" %}selected{% endif %}>Answered</option>
+          <option value="archived" {% if filter_status == "archived" %}selected{% endif %}>Archived</option>
         </select>
       </div>
       <div class="field">
@@ -69,7 +70,7 @@
     <div class="table-wrap">
       <table>
         <thead>
-          <tr><th>Time</th><th>Caller</th><th>Status</th><th>Text reply</th></tr>
+          <tr><th>Time</th><th>Caller</th><th>Status</th><th>Text reply</th><th></th></tr>
         </thead>
         <tbody>
           {% for call in calls %}
@@ -93,9 +94,26 @@
                 <button type="submit" class="btn btn-secondary btn-sm">Send</button>
               </form>
             </td>
+            <td>
+              {% if call.archived_at %}
+              <form method="post" action="/dashboard/calls/{{ call.id }}/unarchive">
+                <input type="hidden" name="phone" value="{{ filter_phone }}">
+                <input type="hidden" name="status" value="{{ filter_status }}">
+                <input type="hidden" name="days" value="{{ filter_days }}">
+                <button type="submit" class="btn btn-secondary btn-sm">Unarchive</button>
+              </form>
+              {% else %}
+              <form method="post" action="/dashboard/calls/{{ call.id }}/archive">
+                <input type="hidden" name="phone" value="{{ filter_phone }}">
+                <input type="hidden" name="status" value="{{ filter_status }}">
+                <input type="hidden" name="days" value="{{ filter_days }}">
+                <button type="submit" class="btn btn-secondary btn-sm">Archive</button>
+              </form>
+              {% endif %}
+            </td>
           </tr>
           {% else %}
-          <tr class="empty-row"><td colspan="4">No calls match these filters.</td></tr>
+          <tr class="empty-row"><td colspan="5">No calls match these filters.</td></tr>
           {% endfor %}
         </tbody>
       </table>
