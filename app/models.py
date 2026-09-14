@@ -49,6 +49,9 @@ class Call(Base):
     status: Mapped[str] = mapped_column(String(20))  # missed / answered
     twilio_call_sid: Mapped[str] = mapped_column(String(64), unique=True, index=True)
     timestamp: Mapped[datetime] = mapped_column(server_default=func.now(), index=True)
+    # Set when a business owner archives a call off their dashboard. The row (and its texts)
+    # stay in the database for the consent/audit trail — this only hides it from the default view.
+    archived_at: Mapped[datetime | None] = mapped_column(nullable=True)
 
     business: Mapped["Business"] = relationship(back_populates="calls")
     text_messages: Mapped[list["TextMessage"]] = relationship(back_populates="call")
@@ -66,7 +69,10 @@ class TextMessage(Base):
     call_id: Mapped[int | None] = mapped_column(ForeignKey("calls.id"), nullable=True, index=True)
     direction: Mapped[str] = mapped_column(String(10))  # outbound / inbound
     body: Mapped[str] = mapped_column(Text)
-    status: Mapped[str] = mapped_column(String(20))  # sent / delivered / failed
+    status: Mapped[str] = mapped_column(String(20))  # sent / delivered / undelivered / failed
+    # Twilio error code (e.g. 30032) when status is undelivered/failed — surfaced on the
+    # dashboard so a carrier/verification rejection doesn't read as a successful send.
+    error_code: Mapped[str | None] = mapped_column(String(10), nullable=True)
     twilio_message_sid: Mapped[str | None] = mapped_column(String(64), unique=True, nullable=True)
     timestamp: Mapped[datetime] = mapped_column(server_default=func.now(), index=True)
 
@@ -75,7 +81,9 @@ class TextMessage(Base):
 
     __table_args__ = (
         CheckConstraint("direction IN ('outbound','inbound')", name="ck_textmessage_direction"),
-        CheckConstraint("status IN ('sent','delivered','failed')", name="ck_textmessage_status"),
+        CheckConstraint(
+            "status IN ('sent','delivered','undelivered','failed')", name="ck_textmessage_status"
+        ),
     )
 
 
