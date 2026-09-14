@@ -48,6 +48,10 @@ class Call(Base):
     caller_number: Mapped[str] = mapped_column(String(20))
     status: Mapped[str] = mapped_column(String(20))  # missed / answered
     twilio_call_sid: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    # SID of the dialed leg to the owner's phone (Twilio's DialCallSid) — lets the async AMD
+    # status callback, which reports by this leg's SID rather than the parent call's, find its
+    # way back to this row. See app/services/missed_call.py.
+    dial_call_sid: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     timestamp: Mapped[datetime] = mapped_column(server_default=func.now(), index=True)
     # Set when a business owner archives a call off their dashboard. The row (and its texts)
     # stay in the database for the consent/audit trail — this only hides it from the default view.
@@ -85,6 +89,19 @@ class TextMessage(Base):
             "status IN ('sent','delivered','undelivered','failed')", name="ck_textmessage_status"
         ),
     )
+
+
+class PendingAmdResult(Base):
+    """Holds an Answering Machine Detection result that arrived before the Call row it
+    belongs to existed yet (the async amd_status_callback can beat the Dial action callback
+    that creates the Call). handle_call_status consumes and deletes the matching row, if any,
+    when it creates the Call. See app/services/missed_call.py."""
+
+    __tablename__ = "pending_amd_results"
+
+    dial_call_sid: Mapped[str] = mapped_column(String(64), primary_key=True)
+    answered_by: Mapped[str] = mapped_column(String(20))
+    received_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
 
 class Job(Base):
