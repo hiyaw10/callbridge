@@ -1,6 +1,6 @@
 import hmac
 
-from fastapi import APIRouter, Depends, Form, Request
+from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -72,6 +72,57 @@ def create_business(
             {
                 "businesses": businesses,
                 "error": "A business with that owner email or Twilio number already exists.",
+            },
+            status_code=400,
+        )
+    return RedirectResponse(url="/admin/businesses", status_code=303)
+
+
+@router.get("/admin/businesses/{business_id}/edit", dependencies=[Depends(require_admin)])
+def edit_business_form(business_id: int, request: Request, db: Session = Depends(get_db)):
+    business = db.get(Business, business_id)
+    if not business:
+        raise HTTPException(status_code=404)
+    return templates.TemplateResponse(
+        request, "admin_edit_business.html", {"business": business, "error": None}
+    )
+
+
+@router.post("/admin/businesses/{business_id}/edit", dependencies=[Depends(require_admin)])
+def edit_business_submit(
+    business_id: int,
+    request: Request,
+    name: str = Form(...),
+    owner_email: str = Form(...),
+    owner_phone: str = Form(...),
+    twilio_number: str = Form(...),
+    plan_tier: str = Form(...),
+    password: str = Form(""),
+    db: Session = Depends(get_db),
+):
+    business = db.get(Business, business_id)
+    if not business:
+        raise HTTPException(status_code=404)
+
+    business.name = name.strip()
+    business.owner_email = owner_email.strip().lower()
+    business.owner_phone = owner_phone.strip()
+    business.twilio_number = twilio_number.strip()
+    business.plan_tier = plan_tier
+    if password.strip():
+        business.password_hash = hash_password(password.strip())
+
+    db.add(business)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        return templates.TemplateResponse(
+            request,
+            "admin_edit_business.html",
+            {
+                "business": business,
+                "error": "That owner email or Twilio number is already used by another business.",
             },
             status_code=400,
         )

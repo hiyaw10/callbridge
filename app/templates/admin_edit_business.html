@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Admin — Edit Business{% endblock %}
+
+{% block nav %}
+<div class="topnav">
+  <div class="topnav-inner">
+    <span class="brand">
+      <span class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+        </svg>
+      </span>
+      CallBridge Admin
+    </span>
+    <div class="nav-right">
+      <a href="/admin/businesses" class="btn btn-secondary btn-sm">Back</a>
+      <a href="/admin/logout" class="btn btn-secondary btn-sm">Log out</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block body %}
+<div class="container page">
+  <div class="page-header">
+    <div>
+      <h1>Edit business</h1>
+      <p>Update {{ business.name }}'s details.</p>
+    </div>
+  </div>
+
+  {% if error %}<div class="alert" style="max-width: 600px;">{{ error }}</div>{% endif %}
+
+  <div class="section">
+    <div class="card card-pad" style="max-width: 600px;">
+      <form method="post" action="/admin/businesses/{{ business.id }}/edit">
+        <div class="field">
+          <label for="name">Business name</label>
+          <input type="text" id="name" name="name" value="{{ business.name }}" required>
+        </div>
+        <div class="field">
+          <label for="owner_email">Owner email</label>
+          <input type="email" id="owner_email" name="owner_email" value="{{ business.owner_email }}" required>
+        </div>
+        <div class="field">
+          <label for="owner_phone">Owner phone</label>
+          <input type="tel" id="owner_phone" name="owner_phone" value="{{ business.owner_phone }}" placeholder="+15551234567" required>
+        </div>
+        <div class="field">
+          <label for="twilio_number">Twilio number</label>
+          <input type="tel" id="twilio_number" name="twilio_number" value="{{ business.twilio_number }}" placeholder="+15551234567" required>
+        </div>
+        <div class="field">
+          <label for="plan_tier">Plan</label>
+          <select id="plan_tier" name="plan_tier">
+            <option value="starter" {% if business.plan_tier == "starter" %}selected{% endif %}>Starter</option>
+            <option value="growth" {% if business.plan_tier == "growth" %}selected{% endif %}>Growth</option>
+            <option value="pro" {% if business.plan_tier == "pro" %}selected{% endif %}>Pro</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="password">Reset password (optional)</label>
+          <input type="text" id="password" name="password" placeholder="Leave blank to keep current password">
+        </div>
+        <button type="submit" class="btn btn-primary">Save changes</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
