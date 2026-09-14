@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.auth import get_current_business
 from app.db import get_db
 from app.models import Business, Call, Job, TextMessage
+from app.services.localtime import TIMEZONE_CHOICES
 from app.services.sms import send_sms
 from app.services.templates import DEFAULT_MISSED_CALL_MESSAGE, DEFAULT_REVIEW_REQUEST_MESSAGE
 from app.templates_env import templates
@@ -183,6 +184,7 @@ def settings_form(
             "business": business,
             "missed_call_message": business.missed_call_message or DEFAULT_MISSED_CALL_MESSAGE,
             "review_request_message": business.review_request_message or DEFAULT_REVIEW_REQUEST_MESSAGE,
+            "timezone_choices": TIMEZONE_CHOICES,
             "saved": False,
         },
     )
@@ -193,6 +195,7 @@ def settings_save(
     request: Request,
     missed_call_message: str = Form(""),
     review_request_message: str = Form(""),
+    business_timezone: str = Form("America/Chicago"),
     business: Business = Depends(get_current_business),
     db: Session = Depends(get_db),
 ):
@@ -200,6 +203,8 @@ def settings_save(
     review_request_message = review_request_message.strip()
     business.missed_call_message = missed_call_message or None
     business.review_request_message = review_request_message or None
+    if business_timezone in dict(TIMEZONE_CHOICES):
+        business.timezone = business_timezone
     db.add(business)
     db.commit()
     return templates.TemplateResponse(
@@ -210,6 +215,7 @@ def settings_save(
             "business": business,
             "missed_call_message": business.missed_call_message or DEFAULT_MISSED_CALL_MESSAGE,
             "review_request_message": business.review_request_message or DEFAULT_REVIEW_REQUEST_MESSAGE,
+            "timezone_choices": TIMEZONE_CHOICES,
             "saved": True,
         },
     )

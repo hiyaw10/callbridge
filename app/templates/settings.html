@@ -1,12 +1,12 @@
 {% extends "base.html" %}
-{% block title %}Message Templates — CallBridge{% endblock %}
+{% block title %}Settings — CallBridge{% endblock %}
 
 {% block body %}
 <div class="container page">
   <div class="page-header">
     <div>
-      <h1>Message templates</h1>
-      <p>Customize the texts CallBridge sends on your behalf. Use <code>{{ '{business_name}' }}</code> anywhere you want your business name inserted.</p>
+      <h1>Settings</h1>
+      <p>Customize the texts CallBridge sends on your behalf — use <code>{{ '{business_name}' }}</code> anywhere you want your business name inserted — and set your dashboard's time zone.</p>
     </div>
     <a href="/dashboard" class="btn btn-secondary btn-sm">Back to dashboard</a>
   </div>
@@ -30,7 +30,17 @@
       <div class="char-count" data-for="review_request_message"></div>
     </div>
 
-    <button type="submit" class="btn btn-primary">Save templates</button>
+    <div class="card card-pad section">
+      <label for="business_timezone">Time zone</label>
+      <p style="margin-top: -0.4rem;">Controls how call and job times are displayed on your dashboard. Defaults to Iowa (Central Time).</p>
+      <select id="business_timezone" name="business_timezone">
+        {% for value, label in timezone_choices %}
+        <option value="{{ value }}" {% if business.timezone == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Save settings</button>
   </form>
 </div>
 
