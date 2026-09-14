@@ -75,7 +75,7 @@
         <tbody>
           {% for call in calls %}
           <tr>
-            <td>{{ call.timestamp.strftime("%b %-d, %-I:%M %p") }}</td>
+            <td>{{ (call.timestamp|localtime(business)).strftime("%b %-d, %-I:%M %p") }}</td>
             <td>{{ call.caller_number }}</td>
             <td><span class="badge badge-{{ call.status }}">{{ call.status }}</span></td>
             <td class="wrap">
@@ -142,10 +142,10 @@
           {% for job in jobs %}
           <tr>
             <td>{{ job.customer_phone }}</td>
-            <td>{{ job.created_at.strftime("%b %-d, %-I:%M %p") }}</td>
+            <td>{{ (job.created_at|localtime(business)).strftime("%b %-d, %-I:%M %p") }}</td>
             <td>
               {% if job.completed_at %}
-                <span class="badge badge-answered">done</span> {{ job.completed_at.strftime("%b %-d") }}
+                <span class="badge badge-answered">done</span> {{ (job.completed_at|localtime(business)).strftime("%b %-d") }}
               {% else %}
                 <span class="badge badge-pending">in progress</span>
               {% endif %}
@@ -154,7 +154,7 @@
               {% if not job.completed_at %}
                 <span style="color: var(--text-faint);">&mdash;</span>
               {% elif job.review_text_sent_at %}
-                <span class="badge badge-sent">sent</span> {{ job.review_text_sent_at.strftime("%b %-d") }}
+                <span class="badge badge-sent">sent</span> {{ (job.review_text_sent_at|localtime(business)).strftime("%b %-d") }}
               {% else %}
                 <span class="badge badge-pending">pending</span> in 24h
               {% endif %}

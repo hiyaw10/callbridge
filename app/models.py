@@ -18,6 +18,9 @@ class Business(Base):
     twilio_number: Mapped[str] = mapped_column(String(20), unique=True, index=True)
     plan_tier: Mapped[str] = mapped_column(String(20), default="starter")
     billing_cycle: Mapped[str] = mapped_column(String(20), default="monthly")
+    # IANA name (e.g. "America/Chicago"). All timestamps are stored in UTC — this only
+    # controls how they're displayed. Defaults to Iowa; editable in Settings.
+    timezone: Mapped[str] = mapped_column(String(64), default="America/Chicago", server_default="America/Chicago")
     trial_ends_at: Mapped[datetime | None] = mapped_column(nullable=True)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
