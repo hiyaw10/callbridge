@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from twilio.base.exceptions import TwilioRestException
 from twilio.rest import Client
 
-from app.config import TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN
+from app.config import PUBLIC_BASE_URL, TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN
 from app.models import Business, TextMessage
 
 _client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN) if TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN else None
@@ -24,9 +24,10 @@ def send_sms(
         # Accepting the send only means Twilio queued it — the carrier can still bounce it
         # (e.g. unverified toll-free number). status_callback lets /webhooks/twilio/sms-status
         # correct the record once Twilio knows the real outcome, instead of leaving it "sent" forever.
-        status_callback = None
-        if request is not None:
-            status_callback = str(request.base_url).rstrip("/") + "/webhooks/twilio/sms-status"
+        # request is None when called from a standalone cron script (no live HTTP request to
+        # derive a URL from) — PUBLIC_BASE_URL is the configured fallback for that case.
+        base_url = str(request.base_url).rstrip("/") if request is not None else PUBLIC_BASE_URL
+        status_callback = f"{base_url}/webhooks/twilio/sms-status" if base_url else None
         try:
             create_kwargs = {"to": to_number, "from_": business.twilio_number, "body": body}
             if status_callback:
