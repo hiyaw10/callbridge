@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Depends, Request, Response
 from fastapi.responses import PlainTextResponse
 from sqlalchemy.orm import Session
@@ -7,7 +9,9 @@ from twilio.twiml.voice_response import VoiceResponse
 from app.config import TWILIO_AUTH_TOKEN
 from app.db import get_db
 from app.models import Business, TextMessage
-from app.services.missed_call import handle_call_status
+from app.services.missed_call import apply_amd_result, handle_call_status
+
+logger = logging.getLogger("callbridge")
 
 router = APIRouter()
 
@@ -16,8 +20,10 @@ DIAL_TIMEOUT_SECONDS = 15
 
 # Answering Machine Detection: without this, carrier voicemail picking up within the Dial
 # timeout above makes Twilio report the call as "completed" (i.e. answered) even though the
-# owner never touched it. AMD analyzes the pickup audio and reports back via AnsweredBy on
-# the call-status callback, so handle_call_status can tell a human pickup from voicemail.
+# owner never touched it. AMD analyzes the pickup audio and reports the human/machine result
+# to amd_status_callback below — Twilio's own warning 21262 confirms that without an explicit
+# callback URL, AMD does not reliably report back at all (it needs somewhere to post the
+# result to), so we can't rely on AnsweredBy just showing up on the Dial action callback.
 MACHINE_DETECTION_TIMEOUT_SECONDS = 10
 
 
@@ -46,12 +52,16 @@ async def twilio_voice(request: Request, db: Session = Depends(get_db)):
 
     response = VoiceResponse()
     if business and business.owner_phone:
-        action_url = str(request.base_url).rstrip("/") + "/webhooks/twilio/call-status"
-        dial = response.dial(timeout=DIAL_TIMEOUT_SECONDS, action=action_url, method="POST")
+        base_url = str(request.base_url).rstrip("/")
+        dial = response.dial(
+            timeout=DIAL_TIMEOUT_SECONDS, action=f"{base_url}/webhooks/twilio/call-status", method="POST"
+        )
         dial.number(
             business.owner_phone,
             machine_detection="Enable",
             machine_detection_timeout=MACHINE_DETECTION_TIMEOUT_SECONDS,
+            amd_status_callback=f"{base_url}/webhooks/twilio/amd-status",
+            amd_status_callback_method="POST",
         )
     return Response(content=str(response), media_type="application/xml")
 
@@ -69,9 +79,12 @@ async def twilio_call_status(request: Request, db: Session = Depends(get_db)):
     # this request is the <Dial action> callback. Fall back to CallStatus for calls that
     # never reached a Dial (e.g. no business found), though those won't have a business anyway.
     call_status = params.get("DialCallStatus") or params.get("CallStatus")
-    # Set only when Answering Machine Detection ran (see MACHINE_DETECTION_TIMEOUT_SECONDS
-    # above) — "human" vs a machine/fax/unknown pickup. Takes priority over call_status.
+    # AnsweredBy normally is NOT present here — AMD is async (see amd_status_callback above)
+    # and reports separately to /amd-status, possibly before this webhook even arrives.
     answered_by = params.get("AnsweredBy")
+    # SID of the dialed leg (distinct from CallSid, which is the parent/inbound call) — lets
+    # a same- or later-arriving AMD result find its way back to this Call row.
+    dial_call_sid = params.get("DialCallSid")
     to_number = params.get("To")
     from_number = params.get("From")
 
@@ -79,8 +92,44 @@ async def twilio_call_status(request: Request, db: Session = Depends(get_db)):
         return PlainTextResponse("missing required fields", status_code=400)
 
     business = db.query(Business).filter(Business.twilio_number == to_number).first()
+    call = None
     if business:
-        handle_call_status(db, business, call_sid, from_number, call_status, answered_by, request)
+        call = handle_call_status(
+            db, business, call_sid, from_number, call_status, answered_by, dial_call_sid, request
+        )
+
+    logger.info(
+        "call-status webhook: call_sid=%s dial_call_sid=%s from=%s to=%s call_status=%s "
+        "answered_by=%s business_found=%s mapped_status=%s",
+        call_sid, dial_call_sid, from_number, to_number, call_status, answered_by,
+        bool(business), call.status if call else None,
+    )
+
+    return PlainTextResponse("ok")
+
+
+@router.post("/webhooks/twilio/amd-status")
+async def twilio_amd_status(request: Request, db: Session = Depends(get_db)):
+    form = await request.form()
+    params = dict(form)
+
+    if not _validate_twilio_request(request, params):
+        return PlainTextResponse("invalid signature", status_code=403)
+
+    # This callback reports on the DIALED leg, so its CallSid is what call-status calls
+    # DialCallSid, not the parent call's CallSid.
+    dial_call_sid = params.get("CallSid")
+    answered_by = params.get("AnsweredBy")
+
+    if not (dial_call_sid and answered_by):
+        return PlainTextResponse("missing required fields", status_code=400)
+
+    call = apply_amd_result(db, dial_call_sid, answered_by, request)
+
+    logger.info(
+        "amd-status webhook: dial_call_sid=%s answered_by=%s resulting_status=%s",
+        dial_call_sid, answered_by, call.status if call else "(call not yet logged, stashed)",
+    )
 
     return PlainTextResponse("ok")
 
