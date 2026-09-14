@@ -63,7 +63,7 @@
     <div class="table-wrap">
       <table>
         <thead>
-          <tr><th>Name</th><th>Owner email</th><th>Twilio number</th><th>Plan</th><th>Added</th></tr>
+          <tr><th>Name</th><th>Owner email</th><th>Twilio number</th><th>Plan</th><th>Added</th><th></th></tr>
         </thead>
         <tbody>
           {% for b in businesses %}
@@ -73,9 +73,10 @@
             <td>{{ b.twilio_number }}</td>
             <td>{{ b.plan_tier }}</td>
             <td>{{ b.created_at.strftime("%b %-d, %Y") }}</td>
+            <td><a href="/admin/businesses/{{ b.id }}/edit" class="btn btn-secondary btn-sm">Edit</a></td>
           </tr>
           {% else %}
-          <tr class="empty-row"><td colspan="5">No businesses yet.</td></tr>
+          <tr class="empty-row"><td colspan="6">No businesses yet.</td></tr>
           {% endfor %}
         </tbody>
       </table>
