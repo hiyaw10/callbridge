@@ -51,14 +51,6 @@
           <input type="tel" id="twilio_number" name="twilio_number" value="{{ business.twilio_number }}" placeholder="+15551234567" required>
         </div>
         <div class="field">
-          <label for="plan_tier">Plan</label>
-          <select id="plan_tier" name="plan_tier">
-            <option value="starter" {% if business.plan_tier == "starter" %}selected{% endif %}>Starter</option>
-            <option value="growth" {% if business.plan_tier == "growth" %}selected{% endif %}>Growth</option>
-            <option value="pro" {% if business.plan_tier == "pro" %}selected{% endif %}>Pro</option>
-          </select>
-        </div>
-        <div class="field">
           <label for="password">Reset password (optional)</label>
           <input type="text" id="password" name="password" placeholder="Leave blank to keep current password">
         </div>

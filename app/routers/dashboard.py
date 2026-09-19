@@ -73,11 +73,42 @@ def dashboard(
             "texts_by_call": texts_by_call,
             "jobs": jobs,
             "stats": _weekly_stats(db, business),
+            "onboarding": _onboarding_status(business),
             "filter_phone": phone,
             "filter_status": status,
             "filter_days": days,
         },
     )
+
+
+@router.post("/dashboard/setup/test-completed")
+def mark_test_completed(
+    phone: str = Form(""),
+    status: str = Form(""),
+    days: str = Form("30"),
+    business: Business = Depends(get_current_business),
+    db: Session = Depends(get_db),
+):
+    if not business.test_completed_at:
+        business.test_completed_at = _now()
+        db.add(business)
+        db.commit()
+    return RedirectResponse(url=_dashboard_url(phone, status, days), status_code=303)
+
+
+@router.post("/dashboard/setup/go-live")
+def mark_go_live(
+    phone: str = Form(""),
+    status: str = Form(""),
+    days: str = Form("30"),
+    business: Business = Depends(get_current_business),
+    db: Session = Depends(get_db),
+):
+    if not business.live_at:
+        business.live_at = _now()
+        db.add(business)
+        db.commit()
+    return RedirectResponse(url=_dashboard_url(phone, status, days), status_code=303)
 
 
 @router.post("/dashboard/calls/{call_id}/reply")
@@ -275,9 +306,27 @@ def _weekly_stats(db: Session, business: Business) -> dict:
     jobs_done = db.query(Job).filter(Job.business_id == business.id, Job.completed_at >= week_ago).count()
 
     return {
+        "calls_received": missed + answered,
         "missed": missed,
         "answered": answered,
         "texts_sent": texts_sent,
+        "recovered": responded_missed_calls,
         "jobs_done": jobs_done,
         "response_rate": round((responded_missed_calls / missed) * 100) if missed else None,
+    }
+
+
+def _onboarding_status(business: Business) -> dict:
+    steps = {
+        "phone_connected": bool(business.twilio_number),
+        "missed_call_customized": business.missed_call_message is not None,
+        "business_info_set": bool(business.name and business.owner_phone),
+        "review_message_customized": business.review_request_message is not None,
+        "test_completed": business.test_completed_at is not None,
+        "live": business.live_at is not None,
+    }
+    return {
+        **steps,
+        "completed_count": sum(1 for done in steps.values() if done),
+        "total_count": len(steps),
     }

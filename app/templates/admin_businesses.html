@@ -63,7 +63,7 @@
     <div class="table-wrap">
       <table>
         <thead>
-          <tr><th>Name</th><th>Owner email</th><th>Twilio number</th><th>Plan</th><th>Added</th><th></th></tr>
+          <tr><th>Name</th><th>Owner email</th><th>Twilio number</th><th>Status</th><th>Added</th><th></th></tr>
         </thead>
         <tbody>
           {% for b in businesses %}
@@ -71,7 +71,10 @@
             <td>{{ b.name }}</td>
             <td>{{ b.owner_email }}</td>
             <td>{{ b.twilio_number }}</td>
-            <td>{{ b.plan_tier }}</td>
+            <td>
+              {% if b.live_at %}<span class="badge badge-answered">live</span>
+              {% else %}<span class="badge badge-pending">setting up</span>{% endif %}
+            </td>
             <td>{{ b.created_at.strftime("%b %-d, %Y") }}</td>
             <td><a href="/admin/businesses/{{ b.id }}/edit" class="btn btn-secondary btn-sm">Edit</a></td>
           </tr>
