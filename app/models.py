@@ -27,11 +27,6 @@ class Business(Base):
     missed_call_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     review_request_message: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    # Dashboard onboarding checklist — set when the business owner confirms each step
-    # from their dashboard. See "Let's Get Your Business Set Up" in app/routers/dashboard.py.
-    test_completed_at: Mapped[datetime | None] = mapped_column(nullable=True)
-    live_at: Mapped[datetime | None] = mapped_column(nullable=True)
-
     # Forgot-password: single-use SMS code, cleared after use or when a new one is requested.
     password_reset_code: Mapped[str | None] = mapped_column(String(6), nullable=True)
     password_reset_expires_at: Mapped[datetime | None] = mapped_column(nullable=True)
