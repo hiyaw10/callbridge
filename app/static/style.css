@@ -304,6 +304,45 @@ td.wrap { white-space: normal; }
 .hero-actions { display: flex; gap: 0.75rem; justify-content: center; }
 .hero-actions .btn { padding: 0.75rem 1.5rem; font-size: 0.95rem; }
 
+.hero-split {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  align-items: center;
+  gap: 3rem;
+  text-align: left;
+  padding: 4.5rem 0 4rem;
+}
+.hero-split h1 { text-align: left; margin: 0 0 1rem; max-width: none; }
+.hero-split .lede { text-align: left; margin: 0 0 1.75rem; max-width: none; }
+.hero-split .hero-actions { justify-content: flex-start; }
+.hero-trust { margin-top: 1.5rem; font-size: 0.85rem; color: var(--text-faint); }
+
+.hero-visual { position: relative; }
+.hero-visual-glow {
+  position: absolute;
+  inset: -10% -15%;
+  background: radial-gradient(circle at 30% 20%, rgba(79, 70, 229, 0.16), transparent 60%),
+              radial-gradient(circle at 80% 80%, rgba(6, 118, 71, 0.12), transparent 55%);
+  filter: blur(4px);
+  z-index: 0;
+}
+.hero-visual-card {
+  position: relative;
+  z-index: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: 0.5rem;
+  transform: rotate(0.6deg);
+}
+.hero-visual-card img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: calc(var(--radius-lg) - 4px);
+}
+
 .steps {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -320,12 +359,32 @@ td.wrap { white-space: normal; }
 .step-card h3 { font-size: 1rem; margin-bottom: 0.4rem; }
 .step-card p { margin: 0; font-size: 0.88rem; }
 
+.steps-icon .step-card { text-align: center; }
+.step-icon {
+  width: 52px; height: 52px; border-radius: 14px;
+  background: var(--primary-light); color: var(--primary);
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 1rem;
+}
+.step-icon svg { width: 26px; height: 26px; }
+.steps-icon .step-num { margin: 0 auto 0.9rem; }
+
+.trade-badges {
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 0.6rem;
+  max-width: 720px; margin: 0 auto;
+}
+.trade-badge {
+  background: var(--primary-light); color: var(--primary);
+  font-size: 0.82rem; font-weight: 600;
+  padding: 0.5rem 1rem; border-radius: 999px;
+}
+
 .section-title { text-align: center; margin-bottom: 0.4rem; }
 .section-subtitle { text-align: center; max-width: 480px; margin: 0 auto 2.5rem; }
 
 .example-sms {
   max-width: 360px;
-  margin: 0 auto 3rem;
+  margin: 0 auto;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
@@ -388,6 +447,9 @@ td.wrap { white-space: normal; }
 @media (max-width: 640px) {
   .hero h1 { font-size: 1.9rem; }
   .hero-actions { flex-direction: column; align-items: stretch; }
+  .hero-split { grid-template-columns: 1fr; padding: 2.5rem 0 2rem; gap: 2rem; }
+  .hero-split .hero-actions { flex-direction: column; align-items: stretch; }
+  .hero-visual-card { transform: none; }
 
   .container { padding: 0 1rem; }
   .topnav-inner { padding: 0 1rem; }
