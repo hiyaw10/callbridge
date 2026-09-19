@@ -27,7 +27,6 @@ def main():
             owner_phone="+15555550100",
             password_hash=hash_password(SEED_PASSWORD),
             twilio_number="+15555550123",
-            plan_tier="starter",
             billing_cycle="monthly",
         )
         db.add(business)

@@ -96,7 +96,6 @@ def edit_business_submit(
     owner_email: str = Form(...),
     owner_phone: str = Form(...),
     twilio_number: str = Form(...),
-    plan_tier: str = Form(...),
     password: str = Form(""),
     db: Session = Depends(get_db),
 ):
@@ -108,7 +107,6 @@ def edit_business_submit(
     business.owner_email = owner_email.strip().lower()
     business.owner_phone = owner_phone.strip()
     business.twilio_number = twilio_number.strip()
-    business.plan_tier = plan_tier
     if password.strip():
         business.password_hash = hash_password(password.strip())
 

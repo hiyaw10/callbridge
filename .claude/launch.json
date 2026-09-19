@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "callbridge-dev",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "cd /Users/tibeb/Desktop/CallBridge && DATABASE_URL=sqlite:////tmp/cb_dev.db .venv/bin/uvicorn app.main:fastapi_app --host 0.0.0.0 --port 8420"],
+      "port": 8420
+    }
+  ]
+}

@@ -16,7 +16,6 @@ class Business(Base):
     owner_phone: Mapped[str] = mapped_column(String(20))  # weekly summary text destination
     password_hash: Mapped[str] = mapped_column(String(255))
     twilio_number: Mapped[str] = mapped_column(String(20), unique=True, index=True)
-    plan_tier: Mapped[str] = mapped_column(String(20), default="starter")
     billing_cycle: Mapped[str] = mapped_column(String(20), default="monthly")
     # IANA name (e.g. "America/Chicago"). All timestamps are stored in UTC — this only
     # controls how they're displayed. Defaults to Iowa; editable in Settings.
@@ -28,6 +27,11 @@ class Business(Base):
     missed_call_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     review_request_message: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    # Dashboard onboarding checklist — set when the business owner confirms each step
+    # from their dashboard. See "Let's Get Your Business Set Up" in app/routers/dashboard.py.
+    test_completed_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    live_at: Mapped[datetime | None] = mapped_column(nullable=True)
+
     # Forgot-password: single-use SMS code, cleared after use or when a new one is requested.
     password_reset_code: Mapped[str | None] = mapped_column(String(6), nullable=True)
     password_reset_expires_at: Mapped[datetime | None] = mapped_column(nullable=True)
@@ -38,7 +42,6 @@ class Business(Base):
     jobs: Mapped[list["Job"]] = relationship(back_populates="business")
 
     __table_args__ = (
-        CheckConstraint("plan_tier IN ('starter','growth','pro')", name="ck_business_plan_tier"),
         CheckConstraint("billing_cycle IN ('monthly','annual')", name="ck_business_billing_cycle"),
     )
 
