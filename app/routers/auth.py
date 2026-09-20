@@ -7,7 +7,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.auth import hash_password, verify_password
-from app.config import ENVIRONMENT, TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN
+from app.config import TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN
 from app.db import get_db
 from app.models import Business
 from app.rate_limit import limiter
@@ -35,7 +35,6 @@ def login_form(request: Request, reset: str = ""):
         "login.html",
         {
             "error": None,
-            "show_demo_hint": ENVIRONMENT != "production",
             "password_reset": reset == "1",
         },
     )
@@ -54,7 +53,7 @@ def login_submit(
         return templates.TemplateResponse(
             request,
             "login.html",
-            {"error": "Invalid email or password", "show_demo_hint": ENVIRONMENT != "production"},
+            {"error": "Invalid email or password"},
             status_code=401,
         )
     request.session["business_id"] = business.id
