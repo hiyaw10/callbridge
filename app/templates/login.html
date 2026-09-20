@@ -1,26 +1,32 @@
 {% extends "base.html" %}
 {% block title %}Log in — CallBridge{% endblock %}
 
-{% block nav %}
-<div class="topnav">
-  <div class="topnav-inner" style="justify-content: center;">
-    <a href="/" class="brand">
-      <span class="brand-mark">
-        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
-        </svg>
-      </span>
-      CallBridge
-    </a>
-  </div>
-</div>
-{% endblock %}
+{% block nav %}{% endblock %}
 
 {% block body %}
 <div class="auth-shell">
-  <div class="auth-card">
-    <div class="card card-pad">
-      <h1>Welcome back</h1>
+  <div class="auth-visual">
+    <div class="auth-visual-overlay"></div>
+    <div class="auth-visual-inner">
+      <a href="/" class="auth-visual-brand">
+        <span class="brand-mark">
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+          </svg>
+        </span>
+        CallBridge
+      </a>
+      <div class="auth-visual-copy">
+        <span class="eyebrow">Welcome Back</span>
+        <h2>Every missed call, already handled.</h2>
+        <p>Log in to see this week's calls, replies, and everything CallBridge caught for you.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="auth-form-panel">
+    <div class="auth-card">
+      <h1 class="auth-form-title">Welcome back</h1>
       <p class="auth-subtitle">Log in to your CallBridge dashboard</p>
 
       {% if error %}<div class="alert">{{ error }}</div>{% endif %}
@@ -42,11 +48,11 @@
         <a href="/forgot-password">Forgot your password?</a>
       </p>
 
-      {% if show_demo_hint %}
-      <div class="demo-hint">
-        Demo login: <code>owner@example.com</code> / <code>password123</code>
+      <div class="auth-onboard-note">
+        <strong>Don't have an account?</strong>
+        <span>Every CallBridge account is set up personally by our team — there's no self-service signup. Contact the CallBridge admin to get onboarded.</span>
+        <a href="/#book-a-call">Book a free call &rarr;</a>
       </div>
-      {% endif %}
     </div>
   </div>
 </div>

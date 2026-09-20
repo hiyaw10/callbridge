@@ -141,18 +141,75 @@ input:focus, select:focus, textarea:focus {
 }
 .card-pad { padding: 1.5rem; }
 
-/* --- Auth shell (login page) --- */
-.auth-shell {
+/* --- Simple centered auth shell (internal admin login only) --- */
+.auth-shell-simple {
   min-height: calc(100vh - 64px);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 2rem 1rem;
 }
+.auth-shell-simple .auth-card { width: 100%; max-width: 380px; }
+.auth-shell-simple .auth-card h1 { text-align: center; font-size: 1.3rem; margin-bottom: 0.25rem; }
+
+/* --- Auth shell (login / forgot-password) --- */
+.auth-shell {
+  min-height: 100vh;
+  display: flex;
+}
+
+.auth-visual {
+  position: relative;
+  flex: 0 0 44%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: url('/static/photos/electrician.jpg') center 35% / cover no-repeat var(--navy);
+  padding: 2.5rem;
+}
+.auth-visual-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(165deg, rgba(7,19,38,0.92) 0%, rgba(7,19,38,0.88) 55%, rgba(7,19,38,0.7) 100%);
+}
+.auth-visual-inner { position: relative; z-index: 1; display: flex; flex-direction: column; justify-content: space-between; flex: 1; }
+.auth-visual-brand {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  font-weight: 700; font-size: 1.05rem; color: #fff;
+}
+.auth-visual-brand:hover { text-decoration: none; }
+.auth-visual-copy { max-width: 420px; margin-top: auto; }
+.auth-visual-copy .eyebrow { color: var(--accent); }
+.auth-visual-copy h2 {
+  font-family: var(--font-display); color: #fff; font-size: 2.15rem; font-weight: 600;
+  line-height: 1.14; letter-spacing: -0.01em; margin: 0 0 0.75rem;
+}
+.auth-visual-copy p { color: rgba(255,255,255,0.82); font-size: 1rem; line-height: 1.6; margin: 0; }
+
+.auth-form-panel {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 1.5rem;
+  background: var(--surface);
+}
 .auth-card { width: 100%; max-width: 380px; }
-.auth-logo { display: flex; justify-content: center; margin-bottom: 1.5rem; }
-.auth-card h1 { text-align: center; font-size: 1.3rem; margin-bottom: 0.25rem; }
-.auth-subtitle { text-align: center; margin-bottom: 1.5rem; font-size: 0.9rem; }
+.auth-form-title { text-align: center; font-size: 1.5rem; margin-bottom: 0.3rem; }
+.auth-subtitle { text-align: center; margin-bottom: 1.75rem; font-size: 0.92rem; }
+
+.auth-onboard-note {
+  margin-top: 2rem;
+  padding: 1.1rem 1.25rem;
+  border-radius: var(--radius);
+  background: var(--cream);
+  border: 1px solid #eee0c9;
+  text-align: center;
+}
+.auth-onboard-note strong { display: block; font-size: 0.9rem; color: var(--text); margin-bottom: 0.35rem; }
+.auth-onboard-note span { display: block; font-size: 0.84rem; color: var(--text-muted); line-height: 1.55; margin-bottom: 0.6rem; }
+.auth-onboard-note a { font-size: 0.87rem; font-weight: 700; }
 .alert {
   padding: 0.65rem 0.9rem;
   border-radius: var(--radius-sm);
@@ -455,6 +512,15 @@ td.wrap { white-space: normal; }
 }
 .footer-contact a { color: var(--text-muted); text-decoration: underline; text-underline-offset: 2px; }
 .footer-contact a:hover { color: var(--primary); }
+
+@media (max-width: 768px) {
+  .auth-shell { flex-direction: column; min-height: 0; }
+  .auth-visual { flex: none; min-height: 260px; padding: 1.75rem; }
+  .auth-visual-copy { margin-top: 1.5rem; }
+  .auth-visual-copy h2 { font-size: 1.6rem; }
+  .auth-visual-copy p { display: none; }
+  .auth-form-panel { padding: 2.5rem 1.5rem 3rem; }
+}
 
 @media (max-width: 640px) {
   .band { padding: 3.5rem 0; }
