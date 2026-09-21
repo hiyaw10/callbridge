@@ -8,7 +8,7 @@ from twilio.twiml.voice_response import VoiceResponse
 
 from app.config import TWILIO_AUTH_TOKEN
 from app.db import get_db
-from app.models import Business, TextMessage
+from app.models import Business, SmsOptOut, TextMessage
 from app.services.missed_call import apply_amd_result, handle_call_status
 
 logger = logging.getLogger("callbridge")
@@ -165,3 +165,48 @@ async def twilio_sms_status(request: Request, db: Session = Depends(get_db)):
             db.commit()
 
     return PlainTextResponse("ok")
+
+
+_STOP_KEYWORDS = {"stop", "stopall", "unsubscribe", "cancel", "end", "quit"}
+# Deliberately excludes "yes" — a standard CTIA re-subscribe keyword elsewhere, but these
+# numbers carry real back-and-forth conversations (missed-call replies), so a customer
+# answering "yes" to an unrelated question shouldn't silently undo an earlier STOP.
+_START_KEYWORDS = {"start", "unstop"}
+
+
+@router.post("/webhooks/twilio/sms-inbound")
+async def twilio_sms_inbound(request: Request, db: Session = Depends(get_db)):
+    """"A message comes in" handler for the business's number. Scoped deliberately narrow:
+    it only tracks STOP/START keywords into SmsOptOut so the bulk-broadcast feature
+    (app/routers/dashboard.py) can honor them. It does not capture the customer's reply
+    into the call thread — that's a separate, larger feature this doesn't attempt."""
+    form = await request.form()
+    params = dict(form)
+
+    if not _validate_twilio_request(request, params):
+        return PlainTextResponse("invalid signature", status_code=403)
+
+    to_number = params.get("To")
+    from_number = params.get("From")
+    body = (params.get("Body") or "").strip().lower()
+
+    business = db.query(Business).filter(Business.twilio_number == to_number).first()
+    if business and from_number:
+        if body in _STOP_KEYWORDS:
+            exists = (
+                db.query(SmsOptOut)
+                .filter(SmsOptOut.business_id == business.id, SmsOptOut.phone_number == from_number)
+                .first()
+            )
+            if not exists:
+                db.add(SmsOptOut(business_id=business.id, phone_number=from_number))
+                db.commit()
+        elif body in _START_KEYWORDS:
+            db.query(SmsOptOut).filter(
+                SmsOptOut.business_id == business.id, SmsOptOut.phone_number == from_number
+            ).delete()
+            db.commit()
+
+    # Empty TwiML: Twilio's own carrier-level opt-out handling (where enabled) already sends
+    # the compliance confirmation reply — we don't want to double-text on top of that.
+    return Response(content="<Response></Response>", media_type="application/xml")

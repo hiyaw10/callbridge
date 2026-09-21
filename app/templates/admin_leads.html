@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Admin — Leads{% endblock %}
+
+{% block nav %}
+<div class="topnav">
+  <div class="topnav-inner">
+    <span class="brand">
+      <span class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+        </svg>
+      </span>
+      CallBridge Admin
+    </span>
+    <div class="nav-right">
+      <a href="/admin/businesses" class="btn btn-secondary btn-sm">Businesses</a>
+      <a href="/admin/logout" class="btn btn-secondary btn-sm">Log out</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block body %}
+<div class="container page">
+  <div class="page-header">
+    <div>
+      <h1>Leads</h1>
+      <p>Everyone who filled out the "Book a Free Call" form, before they hit Calendly.</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Name</th><th>Business</th><th>Address</th><th>Email</th><th>Phone</th><th>Submitted</th></tr>
+        </thead>
+        <tbody>
+          {% for lead in leads %}
+          <tr>
+            <td>{{ lead.contact_name }}</td>
+            <td>{{ lead.business_name }}</td>
+            <td class="wrap">{{ lead.business_address }}</td>
+            <td><a href="mailto:{{ lead.email }}">{{ lead.email }}</a></td>
+            <td>{% if lead.phone %}<a href="tel:{{ lead.phone }}">{{ lead.phone }}</a>{% else %}<span style="color: var(--text-faint);">&mdash;</span>{% endif %}</td>
+            <td>{{ lead.created_at.strftime("%b %-d, %Y %-I:%M %p") }}</td>
+          </tr>
+          {% else %}
+          <tr class="empty-row"><td colspan="6">No leads yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

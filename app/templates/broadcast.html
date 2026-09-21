@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Announcement — CallBridge{% endblock %}
+
+{% block body %}
+<div class="container page">
+  <div class="page-header">
+    <div>
+      <h1>Send an announcement</h1>
+      <p>One text, sent to every customer who's called or had a job with you — new hours, a new service, anything worth telling them.</p>
+    </div>
+    <a href="/dashboard" class="btn btn-secondary btn-sm">Back to dashboard</a>
+  </div>
+
+  {% if result %}
+  <div class="alert alert-success" style="max-width: 640px;">
+    Sent to {{ result.sent }} of {{ result.total }} customers.{% if result.failed %} {{ result.failed }} didn't go through — check the Calls tab for delivery errors.{% endif %}
+  </div>
+  {% endif %}
+
+  <div class="card card-pad section" style="max-width: 640px;">
+    <div class="broadcast-audience">
+      <span class="broadcast-audience-count">{{ recipient_count }}</span>
+      <span>customer{{ 's' if recipient_count != 1 else '' }} will receive this — everyone who has called or had a job logged, minus anyone who's texted STOP.</span>
+    </div>
+
+    <form method="post" action="/dashboard/broadcast" id="broadcast-form">
+      <label for="message">Message</label>
+      <textarea id="message" name="message" rows="4" class="template-input" placeholder="We're now offering..." required></textarea>
+      <div class="char-count" data-for="message"></div>
+      <button type="submit" class="btn btn-primary" {% if recipient_count == 0 %}disabled{% endif %}>
+        Send to {{ recipient_count }} customer{{ 's' if recipient_count != 1 else '' }}
+      </button>
+      {% if recipient_count == 0 %}
+      <p style="margin-top: 0.75rem; margin-bottom: 0; font-size: 0.85rem;">No customers on file yet — this fills in as calls and jobs come through.</p>
+      {% endif %}
+    </form>
+  </div>
+</div>
+
+<script>
+  function updateCount(textarea) {
+    const counter = document.querySelector('.char-count[data-for="' + textarea.id + '"]');
+    const len = textarea.value.length;
+    counter.textContent = len + ' characters' + (len > 160 ? ' — this will send as multiple SMS segments' : '');
+    counter.classList.toggle('char-count-warn', len > 160);
+  }
+  document.querySelectorAll('.template-input').forEach(function (el) {
+    updateCount(el);
+    el.addEventListener('input', function () { updateCount(el); });
+  });
+
+  document.getElementById('broadcast-form').addEventListener('submit', function (e) {
+    const count = {{ recipient_count }};
+    if (!confirm('Send this to all ' + count + ' customers? This can\'t be undone.')) {
+      e.preventDefault();
+    }
+  });
+</script>
+{% endblock %}

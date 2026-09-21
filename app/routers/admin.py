@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.auth import hash_password, require_admin
 from app.config import ADMIN_TOKEN
 from app.db import get_db
-from app.models import Business
+from app.models import Business, Lead
 from app.templates_env import templates
 
 router = APIRouter()
@@ -33,6 +33,12 @@ def admin_login_submit(request: Request, token: str = Form(...)):
 def admin_logout(request: Request):
     request.session.pop("is_admin", None)
     return RedirectResponse(url="/admin/login", status_code=303)
+
+
+@router.get("/admin/leads", dependencies=[Depends(require_admin)])
+def list_leads(request: Request, db: Session = Depends(get_db)):
+    leads = db.query(Lead).order_by(Lead.created_at.desc()).all()
+    return templates.TemplateResponse(request, "admin_leads.html", {"leads": leads})
 
 
 @router.get("/admin/businesses", dependencies=[Depends(require_admin)])

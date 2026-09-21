@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.auth import get_current_business
 from app.db import get_db
-from app.models import Business, Call, Job, TextMessage
+from app.models import Business, Call, Job, SmsOptOut, TextMessage
 from app.services.localtime import TIMEZONE_CHOICES
 from app.services.sms import send_sms
 from app.services.templates import DEFAULT_MISSED_CALL_MESSAGE, DEFAULT_REVIEW_REQUEST_MESSAGE
@@ -169,6 +169,77 @@ def complete_job(
         db.add(job)
         db.commit()
     return RedirectResponse(url=_dashboard_url(phone, status, days), status_code=303)
+
+
+@router.get("/dashboard/broadcast")
+def broadcast_form(
+    request: Request,
+    business: Business = Depends(get_current_business),
+    db: Session = Depends(get_db),
+):
+    recipients = _broadcast_recipients(db, business)
+    return templates.TemplateResponse(
+        request,
+        "broadcast.html",
+        {
+            "current_business": business,
+            "business": business,
+            "recipient_count": len(recipients),
+            "result": None,
+        },
+    )
+
+
+@router.post("/dashboard/broadcast")
+def broadcast_send(
+    request: Request,
+    message: str = Form(...),
+    business: Business = Depends(get_current_business),
+    db: Session = Depends(get_db),
+):
+    message = message.strip()
+    recipients = _broadcast_recipients(db, business)
+    result = None
+    if message and recipients:
+        sent = 0
+        failed = 0
+        for phone in recipients:
+            text = send_sms(db, business, phone, message, request=request)
+            if text.status in ("sent", "delivered"):
+                sent += 1
+            else:
+                failed += 1
+        result = {"sent": sent, "failed": failed, "total": len(recipients)}
+
+    return templates.TemplateResponse(
+        request,
+        "broadcast.html",
+        {
+            "current_business": business,
+            "business": business,
+            "recipient_count": len(recipients),
+            "result": result,
+        },
+    )
+
+
+def _broadcast_recipients(db: Session, business: Business) -> list[str]:
+    """Every distinct phone number that has called or been added as a job for this
+    business, minus anyone who has texted STOP. Used only by the broadcast feature —
+    transactional replies (missed-call text-back) are never gated on opt-out status."""
+    call_numbers = {
+        row[0]
+        for row in db.query(Call.caller_number).filter(Call.business_id == business.id).distinct()
+    }
+    job_numbers = {
+        row[0]
+        for row in db.query(Job.customer_phone).filter(Job.business_id == business.id).distinct()
+    }
+    opted_out = {
+        row[0]
+        for row in db.query(SmsOptOut.phone_number).filter(SmsOptOut.business_id == business.id)
+    }
+    return sorted((call_numbers | job_numbers) - opted_out)
 
 
 @router.get("/dashboard/settings")

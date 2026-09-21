@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import CheckConstraint, ForeignKey, String, Text
+from sqlalchemy import CheckConstraint, ForeignKey, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
@@ -103,6 +103,40 @@ class PendingAmdResult(Base):
     dial_call_sid: Mapped[str] = mapped_column(String(64), primary_key=True)
     answered_by: Mapped[str] = mapped_column(String(20))
     received_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+
+class Lead(Base):
+    """A prospect who filled out the "Book a Free Call" intake form on the landing page,
+    captured before they're handed off to Calendly. Not tied to a Business — these are
+    pre-signup prospects, not customers yet."""
+
+    __tablename__ = "leads"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    contact_name: Mapped[str] = mapped_column(String(255))
+    business_name: Mapped[str] = mapped_column(String(255))
+    business_address: Mapped[str] = mapped_column(String(500))
+    email: Mapped[str] = mapped_column(String(255))
+    # Optional — required on the form is just email now; nullable so the column allows it.
+    phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+
+class SmsOptOut(Base):
+    """A phone number that has texted STOP to a business's number. Checked before every
+    broadcast send; a missing row means "not opted out", not "opted in" — transactional
+    replies (missed-call text-back) aren't gated on this, only the bulk broadcast feature is."""
+
+    __tablename__ = "sms_opt_outs"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    business_id: Mapped[int] = mapped_column(ForeignKey("businesses.id"), index=True)
+    phone_number: Mapped[str] = mapped_column(String(20), index=True)
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+    __table_args__ = (
+        UniqueConstraint("business_id", "phone_number", name="uq_sms_opt_out_business_phone"),
+    )
 
 
 class Job(Base):

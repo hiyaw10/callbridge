@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Book a Free Call — CallBridge{% endblock %}
+
+{% block nav %}{% endblock %}
+
+{% block body %}
+<div class="auth-shell">
+  <div class="auth-visual" style="background-image: url('/static/photos/mechanic.jpg');">
+    <div class="auth-visual-overlay"></div>
+    <div class="auth-visual-inner">
+      <a href="/" class="auth-visual-brand">
+        <span class="brand-mark">
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+          </svg>
+        </span>
+        CallBridge
+      </a>
+      <div class="auth-visual-copy">
+        <span class="eyebrow">Almost There</span>
+        <h2>Let's get a few details first.</h2>
+        <p>Just enough so we know your business before we hop on a call — then you'll pick a time that works for you.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="auth-form-panel">
+    <div class="auth-card">
+      <h1 class="auth-form-title">Tell us about your business</h1>
+      <p class="auth-subtitle">Takes 30 seconds — then you'll choose your call time.</p>
+
+      {% if error %}<div class="alert">{{ error }}</div>{% endif %}
+
+      <form method="post" action="/book-a-call">
+        <div class="field">
+          <label for="contact_name">Your name</label>
+          <input type="text" id="contact_name" name="contact_name" required autofocus>
+        </div>
+        <div class="field">
+          <label for="business_name">Business name</label>
+          <input type="text" id="business_name" name="business_name" required>
+        </div>
+        <div class="field">
+          <label for="business_address">Business address</label>
+          <input type="text" id="business_address" name="business_address" placeholder="Street, City, State" required>
+        </div>
+        <div class="field">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" required>
+        </div>
+        <div class="field">
+          <label for="phone">Phone number</label>
+          <input type="tel" id="phone" name="phone" placeholder="(555) 123-4567">
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Continue to Booking</button>
+      </form>
+
+      <p style="text-align: center; margin-top: 1.25rem; margin-bottom: 0; font-size: 0.85rem;">
+        Prefer to just call? <a href="tel:+18335886479">+1 (833) 588-6479</a>
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block footer %}{% endblock %}
