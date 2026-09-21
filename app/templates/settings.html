@@ -1,12 +1,12 @@
 {% extends "base.html" %}
-{% block title %}Settings — CallBridge{% endblock %}
+{% block title %}CallBridge Settings{% endblock %}
 
 {% block body %}
 <div class="container page">
   <div class="page-header">
     <div>
       <h1>Settings</h1>
-      <p>Customize the texts CallBridge sends on your behalf — use <code>{{ '{business_name}' }}</code> anywhere you want your business name inserted — and set your dashboard's time zone.</p>
+      <p>Customize the texts CallBridge sends on your behalf. Use <code>{{ '{business_name}' }}</code> anywhere you want your business name inserted, and set your dashboard's time zone.</p>
     </div>
     <a href="/dashboard" class="btn btn-secondary btn-sm">Back to dashboard</a>
   </div>
@@ -17,7 +17,7 @@
 
   <form method="post" action="/dashboard/settings" style="max-width: 640px;">
     <div class="card card-pad section">
-      <label for="missed_call_message">Missed-call auto-reply</label>
+      <label for="missed_call_message">Missed call auto reply</label>
       <p style="margin-top: -0.4rem;">Sent immediately when a call goes unanswered.</p>
       <textarea id="missed_call_message" name="missed_call_message" rows="3" class="template-input">{{ missed_call_message }}</textarea>
       <div class="char-count" data-for="missed_call_message"></div>
@@ -48,7 +48,7 @@
   function updateCount(textarea) {
     const counter = document.querySelector('.char-count[data-for="' + textarea.id + '"]');
     const len = textarea.value.length;
-    counter.textContent = len + ' characters' + (len > 160 ? ' — this will send as multiple SMS segments' : '');
+    counter.textContent = len + ' characters' + (len > 160 ? ', this will send as multiple SMS segments' : '');
     counter.classList.toggle('char-count-warn', len > 160);
   }
   document.querySelectorAll('.template-input').forEach(function (el) {

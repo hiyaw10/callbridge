@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Dashboard — CallBridge{% endblock %}
+{% block title %}CallBridge Dashboard{% endblock %}
 
 {% block body %}
 <div class="container page">
@@ -28,7 +28,7 @@
         <div class="stat-sub">nobody could pick up</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">Auto-replies sent</div>
+        <div class="stat-label">Auto replies sent</div>
         <div class="stat-value">{{ stats.texts_sent }}</div>
         <div class="stat-sub">instant texts CallBridge sent for you</div>
       </div>
@@ -43,11 +43,11 @@
 
     {% if stats.missed %}
     <div class="value-banner">
-      <p>Without CallBridge, those <strong>{{ stats.missed }}</strong> missed calls would have gone straight to voicemail. Instead, <strong>{{ stats.recovered }}</strong> of them got a text back from {{ business.name }} within seconds &mdash; so the door stayed open instead of closing.</p>
+      <p>Without CallBridge, those <strong>{{ stats.missed }}</strong> missed calls would have gone straight to voicemail. Instead, <strong>{{ stats.recovered }}</strong> of them got a text back from {{ business.name }} within seconds, so the door stayed open instead of closing.</p>
     </div>
     {% elif stats.calls_received %}
     <div class="value-banner value-banner-neutral">
-      <p>No missed calls this week — every call that came in was answered.</p>
+      <p>No missed calls this week. Every call that came in was answered.</p>
     </div>
     {% endif %}
   </div>
@@ -99,7 +99,7 @@
                 {% for text in texts_by_call.get(call.id, []) %}
                   <div class="thread-msg"><span class="badge badge-{{ text.status }}"{% if text.error_code %} title="Twilio error {{ text.error_code }}"{% endif %}>{{ text.status }}{% if text.error_code %} ({{ text.error_code }}){% endif %}</span> {{ text.body }}</div>
                 {% else %}
-                  <span style="color: var(--text-faint);">&mdash;</span>
+                  <span style="color: var(--text-faint);">None</span>
                 {% endfor %}
               </div>
               <form class="reply-form" method="post" action="/dashboard/calls/{{ call.id }}/reply">
@@ -168,7 +168,7 @@
             </td>
             <td>
               {% if not job.completed_at %}
-                <span style="color: var(--text-faint);">&mdash;</span>
+                <span style="color: var(--text-faint);">None</span>
               {% elif job.review_text_sent_at %}
                 <span class="badge badge-sent">sent</span> {{ (job.review_text_sent_at|localtime(business)).strftime("%b %-d") }}
               {% else %}
