@@ -33,7 +33,7 @@
     <div class="table-wrap">
       <table>
         <thead>
-          <tr><th>Name</th><th>Business</th><th>Address</th><th>Phone</th><th>Submitted</th></tr>
+          <tr><th>Name</th><th>Business</th><th>Address</th><th>Email</th><th>Phone</th><th>Submitted</th></tr>
         </thead>
         <tbody>
           {% for lead in leads %}
@@ -41,11 +41,12 @@
             <td>{{ lead.contact_name }}</td>
             <td>{{ lead.business_name }}</td>
             <td class="wrap">{{ lead.business_address }}</td>
-            <td><a href="tel:{{ lead.phone }}">{{ lead.phone }}</a></td>
+            <td><a href="mailto:{{ lead.email }}">{{ lead.email }}</a></td>
+            <td>{% if lead.phone %}<a href="tel:{{ lead.phone }}">{{ lead.phone }}</a>{% else %}<span style="color: var(--text-faint);">&mdash;</span>{% endif %}</td>
             <td>{{ lead.created_at.strftime("%b %-d, %Y %-I:%M %p") }}</td>
           </tr>
           {% else %}
-          <tr class="empty-row"><td colspan="5">No leads yet.</td></tr>
+          <tr class="empty-row"><td colspan="6">No leads yet.</td></tr>
           {% endfor %}
         </tbody>
       </table>

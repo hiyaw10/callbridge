@@ -25,19 +25,22 @@ def book_a_call_submit(
     contact_name: str = Form(...),
     business_name: str = Form(...),
     business_address: str = Form(...),
-    phone: str = Form(...),
+    email: str = Form(...),
+    phone: str = Form(""),
     db: Session = Depends(get_db),
 ):
     lead = Lead(
         contact_name=contact_name.strip(),
         business_name=business_name.strip(),
         business_address=business_address.strip(),
-        phone=phone.strip(),
+        email=email.strip(),
+        phone=phone.strip() or None,
     )
     db.add(lead)
     db.commit()
 
     # Hand off to the actual booking calendar, prefilled with what we already know
-    # so they don't have to type their name again.
-    redirect_url = f"{CALENDLY_URL}?{urlencode({'name': lead.contact_name})}"
+    # so they don't have to type it again.
+    prefill = {"name": lead.contact_name, "email": lead.email}
+    redirect_url = f"{CALENDLY_URL}?{urlencode(prefill)}"
     return RedirectResponse(url=redirect_url, status_code=303)

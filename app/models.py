@@ -116,7 +116,9 @@ class Lead(Base):
     contact_name: Mapped[str] = mapped_column(String(255))
     business_name: Mapped[str] = mapped_column(String(255))
     business_address: Mapped[str] = mapped_column(String(500))
-    phone: Mapped[str] = mapped_column(String(20))
+    email: Mapped[str] = mapped_column(String(255))
+    # Optional — required on the form is just email now; nullable so the column allows it.
+    phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
 

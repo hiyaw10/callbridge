@@ -25,7 +25,8 @@ def upgrade() -> None:
         sa.Column('contact_name', sa.String(length=255), nullable=False),
         sa.Column('business_name', sa.String(length=255), nullable=False),
         sa.Column('business_address', sa.String(length=500), nullable=False),
-        sa.Column('phone', sa.String(length=20), nullable=False),
+        sa.Column('email', sa.String(length=255), nullable=False),
+        sa.Column('phone', sa.String(length=20), nullable=True),
         sa.Column('created_at', sa.DateTime(), server_default=sa.func.now(), nullable=False),
     )
 
