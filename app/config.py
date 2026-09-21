@@ -28,3 +28,5 @@ TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN", "")
 PUBLIC_BASE_URL = os.environ.get("PUBLIC_BASE_URL", "").rstrip("/")
 
 SENTRY_DSN = os.environ.get("SENTRY_DSN", "")
+
+CALENDLY_URL = os.environ.get("CALENDLY_URL", "https://calendly.com/hiyawamanuel11/30min")

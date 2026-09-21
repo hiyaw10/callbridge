@@ -23,7 +23,7 @@ from app.config import (
 )
 from app.db import SessionLocal
 from app.rate_limit import limiter
-from app.routers import admin, auth, dashboard, webhooks
+from app.routers import admin, auth, dashboard, leads, webhooks
 from app.templates_env import templates
 
 logging.basicConfig(
@@ -54,6 +54,7 @@ fastapi_app.include_router(auth.router)
 fastapi_app.include_router(dashboard.router)
 fastapi_app.include_router(webhooks.router)
 fastapi_app.include_router(admin.router)
+fastapi_app.include_router(leads.router)
 
 
 @fastapi_app.middleware("http")
