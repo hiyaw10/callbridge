@@ -507,6 +507,48 @@ td.wrap { white-space: normal; }
 }
 .section-subtitle { text-align: center; max-width: 540px; margin: 0 auto; font-size: 1.08rem; line-height: 1.6; color: var(--text-muted); }
 
+.stats-band { padding: 5rem 0; }
+.stats-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem; max-width: 1080px; margin: 0 auto;
+}
+.stat-card-premium {
+  position: relative;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 2rem 1.5rem;
+  text-align: center;
+  display: flex; flex-direction: column; align-items: center;
+  box-shadow: 0 1px 2px rgba(11,37,69,0.04);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.stat-card-premium::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, var(--accent), #b97e28);
+}
+.stat-card-premium:hover { transform: translateY(-3px); box-shadow: 0 16px 32px rgba(11,37,69,0.1); }
+.stat-card-icon {
+  width: 44px; height: 44px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(214,154,61,0.12); color: var(--accent);
+  margin-bottom: 1.1rem;
+}
+.stat-card-icon svg { width: 21px; height: 21px; }
+.stat-card-number {
+  font-family: var(--font-display); font-size: 2.5rem; font-weight: 700;
+  color: var(--navy); letter-spacing: -0.01em; line-height: 1;
+}
+.stat-card-label {
+  margin-top: 0.6rem; font-size: 0.88rem; font-weight: 700;
+  color: var(--text); line-height: 1.4;
+}
+.stat-card-caption {
+  margin-top: 0.4rem; font-size: 0.78rem; font-weight: 600;
+  color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.03em;
+}
+
 .example-sms {
   max-width: 380px;
   margin: 0 auto;
@@ -565,8 +607,8 @@ td.wrap { white-space: normal; }
   display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 2rem;
 }
 .footer-brand { display: flex; flex-direction: column; gap: 0.35rem; }
-.footer-brand-name { font-family: var(--font-display); font-size: 1.3rem; font-weight: 600; color: var(--text); }
-.footer-tagline { font-size: 0.88rem; color: var(--text-muted); }
+.footer-brand-name { font-family: var(--font-display); font-size: 1.65rem; font-weight: 700; color: var(--text); }
+.footer-tagline { font-size: 1rem; font-weight: 500; color: var(--text-muted); }
 .footer-contact {
   display: flex; flex-direction: column; gap: 0.45rem;
   font-size: 0.85rem; color: var(--text-muted); text-align: right;
@@ -602,6 +644,10 @@ td.wrap { white-space: normal; }
   .cta-band-inner h2 { font-size: 1.9rem; }
   .trade-photos { grid-template-columns: 1fr 1fr; }
   .plan-single-price .amount { font-size: 3rem; }
+
+  .stats-grid { grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .stat-card-premium { padding: 1.5rem 1rem; }
+  .stat-card-number { font-size: 2rem; }
 
   .footer-inner { flex-direction: column; text-align: center; }
   .footer-contact { text-align: center; align-items: center; }
