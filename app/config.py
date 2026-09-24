@@ -30,3 +30,8 @@ PUBLIC_BASE_URL = os.environ.get("PUBLIC_BASE_URL", "").rstrip("/")
 SENTRY_DSN = os.environ.get("SENTRY_DSN", "")
 
 CALENDLY_URL = os.environ.get("CALENDLY_URL", "https://calendly.com/hiyawamanuel11/30min")
+
+# Google Analytics 4 measurement ID (e.g. "G-XXXXXXXXXX"). Unset in development — the
+# tracking script only renders in base.html when this is present, so local/dev traffic
+# never reports to the real property.
+GA_MEASUREMENT_ID = os.environ.get("GA_MEASUREMENT_ID", "")

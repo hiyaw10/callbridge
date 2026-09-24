@@ -35,6 +35,7 @@ class Business(Base):
     calls: Mapped[list["Call"]] = relationship(back_populates="business")
     text_messages: Mapped[list["TextMessage"]] = relationship(back_populates="business")
     jobs: Mapped[list["Job"]] = relationship(back_populates="business")
+    broadcasts: Mapped[list["Broadcast"]] = relationship(back_populates="business")
 
     __table_args__ = (
         CheckConstraint("billing_cycle IN ('monthly','annual')", name="ck_business_billing_cycle"),
@@ -72,6 +73,9 @@ class TextMessage(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     business_id: Mapped[int] = mapped_column(ForeignKey("businesses.id"), index=True)
     call_id: Mapped[int | None] = mapped_column(ForeignKey("calls.id"), nullable=True, index=True)
+    # Set when this message is one recipient's copy of a bulk announcement, instead of a
+    # transactional reply tied to a call. See Broadcast below.
+    broadcast_id: Mapped[int | None] = mapped_column(ForeignKey("broadcasts.id"), nullable=True, index=True)
     direction: Mapped[str] = mapped_column(String(10))  # outbound / inbound
     body: Mapped[str] = mapped_column(Text)
     status: Mapped[str] = mapped_column(String(20))  # sent / delivered / undelivered / failed
@@ -83,6 +87,7 @@ class TextMessage(Base):
 
     business: Mapped["Business"] = relationship(back_populates="text_messages")
     call: Mapped["Call | None"] = relationship(back_populates="text_messages")
+    broadcast: Mapped["Broadcast | None"] = relationship(back_populates="text_messages")
 
     __table_args__ = (
         CheckConstraint("direction IN ('outbound','inbound')", name="ck_textmessage_direction"),
@@ -90,6 +95,25 @@ class TextMessage(Base):
             "status IN ('sent','delivered','undelivered','failed')", name="ck_textmessage_status"
         ),
     )
+
+
+class Broadcast(Base):
+    """One "send an announcement" action from the dashboard — the message content plus
+    outcome counts, so a business can see what they sent and when instead of that
+    information disappearing once the send-result page is navigated away from."""
+
+    __tablename__ = "broadcasts"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    business_id: Mapped[int] = mapped_column(ForeignKey("businesses.id"), index=True)
+    message: Mapped[str] = mapped_column(Text)
+    recipient_count: Mapped[int] = mapped_column(default=0)
+    sent_count: Mapped[int] = mapped_column(default=0)
+    failed_count: Mapped[int] = mapped_column(default=0)
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now(), index=True)
+
+    business: Mapped["Business"] = relationship(back_populates="broadcasts")
+    text_messages: Mapped[list["TextMessage"]] = relationship(back_populates="broadcast")
 
 
 class PendingAmdResult(Base):

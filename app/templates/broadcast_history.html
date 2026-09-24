@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}CallBridge Past Announcements{% endblock %}
+
+{% block body %}
+<div class="container page">
+  <div class="page-header">
+    <div>
+      <h1>Past announcements</h1>
+      <p>Every message you've sent to your customer list, and how it went.</p>
+    </div>
+    <div style="display: flex; gap: 0.5rem;">
+      <a href="/dashboard/broadcast" class="btn btn-primary btn-sm">Send an announcement</a>
+      <a href="/dashboard" class="btn btn-secondary btn-sm">Back to dashboard</a>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Sent</th><th>Message</th><th>Recipients</th><th>Delivered</th><th>Failed</th></tr>
+        </thead>
+        <tbody>
+          {% for broadcast in broadcasts %}
+          <tr>
+            <td style="white-space: nowrap;">{{ (broadcast.created_at|localtime(business)).strftime("%b %-d, %Y %-I:%M %p") }}</td>
+            <td class="wrap">{{ broadcast.message }}</td>
+            <td>{{ broadcast.recipient_count }}</td>
+            <td><span class="badge badge-delivered">{{ broadcast.sent_count }}</span></td>
+            <td>{% if broadcast.failed_count %}<span class="badge badge-failed">{{ broadcast.failed_count }}</span>{% else %}<span style="color: var(--text-faint);">None</span>{% endif %}</td>
+          </tr>
+          {% else %}
+          <tr class="empty-row"><td colspan="5">No announcements sent yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

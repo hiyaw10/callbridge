@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.auth import get_current_business
 from app.db import get_db
-from app.models import Business, Call, Job, SmsOptOut, TextMessage
+from app.models import Broadcast, Business, Call, Job, SmsOptOut, TextMessage
 from app.services.localtime import TIMEZONE_CHOICES
 from app.services.sms import send_sms
 from app.services.templates import DEFAULT_MISSED_CALL_MESSAGE, DEFAULT_REVIEW_REQUEST_MESSAGE
@@ -201,14 +201,23 @@ def broadcast_send(
     recipients = _broadcast_recipients(db, business)
     result = None
     if message and recipients:
+        broadcast = Broadcast(business_id=business.id, message=message, recipient_count=len(recipients))
+        db.add(broadcast)
+        db.commit()
+        db.refresh(broadcast)
+
         sent = 0
         failed = 0
         for phone in recipients:
-            text = send_sms(db, business, phone, message, request=request)
+            text = send_sms(db, business, phone, message, broadcast_id=broadcast.id, request=request)
             if text.status in ("sent", "delivered"):
                 sent += 1
             else:
                 failed += 1
+        broadcast.sent_count = sent
+        broadcast.failed_count = failed
+        db.add(broadcast)
+        db.commit()
         result = {"sent": sent, "failed": failed, "total": len(recipients)}
 
     return templates.TemplateResponse(
@@ -220,6 +229,25 @@ def broadcast_send(
             "recipient_count": len(recipients),
             "result": result,
         },
+    )
+
+
+@router.get("/dashboard/broadcasts")
+def broadcast_history(
+    request: Request,
+    business: Business = Depends(get_current_business),
+    db: Session = Depends(get_db),
+):
+    broadcasts = (
+        db.query(Broadcast)
+        .filter(Broadcast.business_id == business.id)
+        .order_by(Broadcast.created_at.desc())
+        .all()
+    )
+    return templates.TemplateResponse(
+        request,
+        "broadcast_history.html",
+        {"current_business": business, "business": business, "broadcasts": broadcasts},
     )
 
 
