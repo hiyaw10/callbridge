@@ -16,6 +16,7 @@ from app.templates_env import templates
 router = APIRouter()
 
 MONTHLY_PRICE = 99
+PAGE_SIZE = 15
 
 
 @router.get("/admin/login")
@@ -125,7 +126,15 @@ def analytics(request: Request, days: str = "30", db: Session = Depends(get_db))
     )
 
 
-def _search_leads(db: Session, q: str):
+def _paginate(query, page: int):
+    total = query.count()
+    total_pages = max(1, -(-total // PAGE_SIZE))  # ceil division
+    page = max(1, min(page, total_pages))
+    items = query.offset((page - 1) * PAGE_SIZE).limit(PAGE_SIZE).all()
+    return items, page, total_pages, total
+
+
+def _search_leads(db: Session, q: str, show: str):
     query = db.query(Lead)
     if q:
         like = f"%{q}%"
@@ -138,10 +147,11 @@ def _search_leads(db: Session, q: str):
                 Lead.phone.ilike(like),
             )
         )
-    return query.order_by(Lead.created_at.desc()).all()
+    query = query.filter(Lead.archived_at.isnot(None)) if show == "archived" else query.filter(Lead.archived_at.is_(None))
+    return query.order_by(Lead.created_at.desc())
 
 
-def _search_businesses(db: Session, q: str):
+def _search_businesses(db: Session, q: str, show: str):
     query = db.query(Business)
     if q:
         like = f"%{q}%"
@@ -153,13 +163,22 @@ def _search_businesses(db: Session, q: str):
                 Business.twilio_number.ilike(like),
             )
         )
-    return query.order_by(Business.created_at.desc()).all()
+    query = (
+        query.filter(Business.archived_at.isnot(None))
+        if show == "archived"
+        else query.filter(Business.archived_at.is_(None))
+    )
+    return query.order_by(Business.created_at.desc())
 
 
 @router.get("/admin/leads", dependencies=[Depends(require_admin)])
-def list_leads(request: Request, q: str = "", db: Session = Depends(get_db)):
-    leads = _search_leads(db, q.strip())
-    return templates.TemplateResponse(request, "admin_leads.html", {"leads": leads, "q": q})
+def list_leads(request: Request, q: str = "", show: str = "active", page: int = 1, db: Session = Depends(get_db)):
+    leads, page, total_pages, total = _paginate(_search_leads(db, q.strip(), show), page)
+    return templates.TemplateResponse(
+        request,
+        "admin_leads.html",
+        {"leads": leads, "q": q, "show": show, "page": page, "total_pages": total_pages, "total": total, "page_size": PAGE_SIZE},
+    )
 
 
 @router.post("/admin/leads/{lead_id}/notes", dependencies=[Depends(require_admin)])
@@ -168,6 +187,8 @@ def update_lead_notes(
     request: Request,
     notes: str = Form(""),
     q: str = Form(""),
+    show: str = Form("active"),
+    page: int = Form(1),
     db: Session = Depends(get_db),
 ):
     lead = db.get(Lead, lead_id)
@@ -176,15 +197,80 @@ def update_lead_notes(
     lead.notes = notes.strip() or None
     db.add(lead)
     db.commit()
-    return RedirectResponse(url=f"/admin/leads?q={q}", status_code=303)
+    return RedirectResponse(url=f"/admin/leads?q={q}&show={show}&page={page}", status_code=303)
+
+
+@router.post("/admin/leads/{lead_id}/archive", dependencies=[Depends(require_admin)])
+def archive_lead(
+    lead_id: int, q: str = Form(""), page: int = Form(1), db: Session = Depends(get_db)
+):
+    lead = db.get(Lead, lead_id)
+    if not lead:
+        raise HTTPException(status_code=404)
+    lead.archived_at = datetime.now(timezone.utc).replace(tzinfo=None)
+    db.add(lead)
+    db.commit()
+    return RedirectResponse(url=f"/admin/leads?q={q}&page={page}", status_code=303)
+
+
+@router.post("/admin/leads/{lead_id}/unarchive", dependencies=[Depends(require_admin)])
+def unarchive_lead(
+    lead_id: int, q: str = Form(""), page: int = Form(1), db: Session = Depends(get_db)
+):
+    lead = db.get(Lead, lead_id)
+    if not lead:
+        raise HTTPException(status_code=404)
+    lead.archived_at = None
+    db.add(lead)
+    db.commit()
+    return RedirectResponse(url=f"/admin/leads?q={q}&show=archived&page={page}", status_code=303)
 
 
 @router.get("/admin/businesses", dependencies=[Depends(require_admin)])
-def list_businesses(request: Request, q: str = "", db: Session = Depends(get_db)):
-    businesses = _search_businesses(db, q.strip())
+def list_businesses(
+    request: Request, q: str = "", show: str = "active", page: int = 1, db: Session = Depends(get_db)
+):
+    businesses, page, total_pages, total = _paginate(_search_businesses(db, q.strip(), show), page)
     return templates.TemplateResponse(
-        request, "admin_businesses.html", {"businesses": businesses, "error": None, "q": q}
+        request,
+        "admin_businesses.html",
+        {
+            "businesses": businesses,
+            "error": None,
+            "q": q,
+            "show": show,
+            "page": page,
+            "total_pages": total_pages,
+            "total": total,
+            "page_size": PAGE_SIZE,
+        },
     )
+
+
+@router.post("/admin/businesses/{business_id}/archive", dependencies=[Depends(require_admin)])
+def archive_business(
+    business_id: int, q: str = Form(""), page: int = Form(1), db: Session = Depends(get_db)
+):
+    business = db.get(Business, business_id)
+    if not business:
+        raise HTTPException(status_code=404)
+    business.archived_at = datetime.now(timezone.utc).replace(tzinfo=None)
+    db.add(business)
+    db.commit()
+    return RedirectResponse(url=f"/admin/businesses?q={q}&page={page}", status_code=303)
+
+
+@router.post("/admin/businesses/{business_id}/unarchive", dependencies=[Depends(require_admin)])
+def unarchive_business(
+    business_id: int, q: str = Form(""), page: int = Form(1), db: Session = Depends(get_db)
+):
+    business = db.get(Business, business_id)
+    if not business:
+        raise HTTPException(status_code=404)
+    business.archived_at = None
+    db.add(business)
+    db.commit()
+    return RedirectResponse(url=f"/admin/businesses?q={q}&show=archived&page={page}", status_code=303)
 
 
 @router.post("/admin/businesses", dependencies=[Depends(require_admin)])
@@ -209,7 +295,7 @@ def create_business(
         db.commit()
     except IntegrityError:
         db.rollback()
-        businesses = db.query(Business).order_by(Business.created_at.desc()).all()
+        businesses, page, total_pages, total = _paginate(_search_businesses(db, "", "active"), 1)
         return templates.TemplateResponse(
             request,
             "admin_businesses.html",
@@ -217,6 +303,11 @@ def create_business(
                 "businesses": businesses,
                 "error": "A business with that owner email or Twilio number already exists.",
                 "q": "",
+                "show": "active",
+                "page": page,
+                "total_pages": total_pages,
+                "total": total,
+                "page_size": PAGE_SIZE,
             },
             status_code=400,
         )

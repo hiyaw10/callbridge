@@ -35,20 +35,27 @@
       <label for="q">Search</label>
       <input type="text" id="q" name="q" value="{{ q }}" placeholder="Name, business, address, email, or phone">
     </div>
+    <div class="field">
+      <label for="show">Show</label>
+      <select id="show" name="show">
+        <option value="active" {% if show != "archived" %}selected{% endif %}>Active</option>
+        <option value="archived" {% if show == "archived" %}selected{% endif %}>Archived</option>
+      </select>
+    </div>
     <button type="submit" class="btn btn-secondary">Search</button>
-    {% if q %}<a href="/admin/leads" class="btn btn-secondary">Clear</a>{% endif %}
+    {% if q %}<a href="/admin/leads?show={{ show }}" class="btn btn-secondary">Clear</a>{% endif %}
   </form>
 
   <div class="section">
     <div class="table-wrap">
       <table>
         <thead>
-          <tr><th>#</th><th>Name</th><th>Business</th><th>Address</th><th>Email</th><th>Phone</th><th>Submitted</th><th>Remarks</th></tr>
+          <tr><th>#</th><th>Name</th><th>Business</th><th>Address</th><th>Email</th><th>Phone</th><th>Submitted</th><th>Remarks</th><th></th></tr>
         </thead>
         <tbody>
           {% for lead in leads %}
           <tr>
-            <td>{{ loop.index }}</td>
+            <td>{{ (page - 1) * page_size + loop.index }}</td>
             <td>{{ lead.contact_name }}</td>
             <td>{{ lead.business_name }}</td>
             <td class="wrap">{{ lead.business_address }}</td>
@@ -58,17 +65,48 @@
             <td class="wrap" style="min-width: 220px;">
               <form method="post" action="/admin/leads/{{ lead.id }}/notes" class="inline-form">
                 <input type="hidden" name="q" value="{{ q }}">
+                <input type="hidden" name="show" value="{{ show }}">
+                <input type="hidden" name="page" value="{{ page }}">
                 <input type="text" name="notes" value="{{ lead.notes or '' }}" placeholder="Add a remark&hellip;">
                 <button type="submit" class="btn btn-secondary btn-sm">Save</button>
               </form>
             </td>
+            <td>
+              {% if show == "archived" %}
+              <form method="post" action="/admin/leads/{{ lead.id }}/unarchive">
+                <input type="hidden" name="q" value="{{ q }}">
+                <input type="hidden" name="page" value="{{ page }}">
+                <button type="submit" class="btn btn-secondary btn-sm">Restore</button>
+              </form>
+              {% else %}
+              <form method="post" action="/admin/leads/{{ lead.id }}/archive">
+                <input type="hidden" name="q" value="{{ q }}">
+                <input type="hidden" name="page" value="{{ page }}">
+                <button type="submit" class="btn btn-secondary btn-sm">Archive</button>
+              </form>
+              {% endif %}
+            </td>
           </tr>
           {% else %}
-          <tr class="empty-row"><td colspan="8">{% if q %}No leads match "{{ q }}".{% else %}No leads yet.{% endif %}</td></tr>
+          <tr class="empty-row"><td colspan="9">{% if q %}No leads match "{{ q }}".{% elif show == "archived" %}No archived leads.{% else %}No leads yet.{% endif %}</td></tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
+
+    {% if total_pages > 1 %}
+    <div class="pagination">
+      <span class="pagination-info">Page {{ page }} of {{ total_pages }} &middot; {{ total }} lead{{ "s" if total != 1 else "" }}</span>
+      <div class="pagination-controls">
+        {% if page > 1 %}
+        <a href="/admin/leads?q={{ q }}&show={{ show }}&page={{ page - 1 }}" class="btn btn-secondary btn-sm">&larr; Prev</a>
+        {% endif %}
+        {% if page < total_pages %}
+        <a href="/admin/leads?q={{ q }}&show={{ show }}&page={{ page + 1 }}" class="btn btn-secondary btn-sm">Next &rarr;</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
   </div>
 </div>
 {% endblock %}

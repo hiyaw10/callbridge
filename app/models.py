@@ -25,6 +25,10 @@ class Business(Base):
 
     # Internal admin notes about this business — never shown to the business owner.
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Hides the business from the default admin list. Purely an admin-view concern — does
+    # NOT suspend the account: login, the dashboard, and Twilio webhook routing all ignore
+    # this entirely, so an archived business keeps working normally for its owner.
+    archived_at: Mapped[datetime | None] = mapped_column(nullable=True)
 
     # NULL means "use the default template" — see app/services/templates.py
     missed_call_message: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -150,6 +154,8 @@ class Lead(Base):
 
     # Internal admin notes (e.g. "called, not interested", "follow up next week").
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Hides the lead from the default admin list — e.g. a dead lead that's just clutter now.
+    archived_at: Mapped[datetime | None] = mapped_column(nullable=True)
 
 
 class SmsOptOut(Base):
