@@ -20,6 +20,11 @@ TERMINAL_STATUS_MAP = {
 # Voicemail commonly picks up within our Dial timeout, which makes DialCallStatus report
 # "completed" even though the owner never actually took the call — AMD is what tells the
 # two cases apart, so it overrides the plain completed->answered mapping above.
+# "unknown" is deliberately NOT mapped here: it means AMD couldn't tell human from machine
+# within its timeout (short greeting, brief pause, noisy audio) — it is not evidence of
+# voicemail. Treating it as "missed" was misclassifying real human pickups as missed calls
+# (and texting the customer a "sorry we missed you" while the owner was just on with them).
+# Leaving it out of the map falls through to the plain completed->answered guess instead.
 ANSWERED_BY_MAP = {
     "human": "answered",
     "machine_start": "missed",
@@ -27,7 +32,6 @@ ANSWERED_BY_MAP = {
     "machine_end_silence": "missed",
     "machine_end_other": "missed",
     "fax": "missed",
-    "unknown": "missed",
 }
 
 
