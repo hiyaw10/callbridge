@@ -45,8 +45,22 @@ def admin_logout(request: Request):
 _ACTIVITY_RANGES = {"7": 7, "30": 30, "90": 90, "all": None}
 
 
+def _paginate_list(items: list, page: int):
+    total = len(items)
+    total_pages = max(1, -(-total // PAGE_SIZE))  # ceil division
+    page = max(1, min(page, total_pages))
+    start = (page - 1) * PAGE_SIZE
+    return items[start:start + PAGE_SIZE], page, total_pages, total
+
+
 @router.get("/admin/analytics", dependencies=[Depends(require_admin)])
-def analytics(request: Request, days: str = "30", db: Session = Depends(get_db)):
+def analytics(
+    request: Request,
+    days: str = "30",
+    growth_q: str = "",
+    growth_page: int = 1,
+    db: Session = Depends(get_db),
+):
     now = datetime.now(timezone.utc).replace(tzinfo=None)
     days_n = _ACTIVITY_RANGES.get(days, 30)
     cutoff = now - timedelta(days=days_n) if days_n else None
@@ -101,17 +115,31 @@ def analytics(request: Request, days: str = "30", db: Session = Depends(get_db))
     broadcasts_sent = len(broadcasts)
     announcement_recipients = sum(b.recipient_count for b in broadcasts)
 
-    # Sign-ups and leads by week, most recent 8 weeks (newest first), for a simple
-    # growth-over-time view without pulling in a charting library.
-    weeks = []
-    for i in range(0, 8):
-        week_start = (now - timedelta(days=now.weekday() + i * 7)).replace(
-            hour=0, minute=0, second=0, microsecond=0
-        )
+    # Sign-ups and leads by week, newest first, covering the platform's full history (not
+    # just a fixed recent window) — every business and lead ever created falls in some week
+    # here, which is what makes searching/paginating this table actually useful.
+    this_week_start = (now - timedelta(days=now.weekday())).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
+    earliest_business = db.query(Business.created_at).order_by(Business.created_at.asc()).first()
+    earliest_lead = db.query(Lead.created_at).order_by(Lead.created_at.asc()).first()
+    candidates = [d[0] for d in (earliest_business, earliest_lead) if d]
+    earliest = min(candidates) if candidates else now
+    earliest_week_start = (earliest - timedelta(days=earliest.weekday())).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
+    total_weeks = max(1, int((this_week_start - earliest_week_start).days / 7) + 1)
+
+    all_weeks = []
+    for i in range(0, total_weeks):
+        week_start = this_week_start - timedelta(days=i * 7)
         week_end = week_start + timedelta(days=7)
-        weeks.append(
+        label = week_start.strftime("%b %-d, %Y")
+        if growth_q and growth_q.lower() not in label.lower():
+            continue
+        all_weeks.append(
             {
-                "label": week_start.strftime("%b %-d"),
+                "label": label,
                 "new_businesses": db.query(Business)
                 .filter(Business.created_at >= week_start, Business.created_at < week_end)
                 .count(),
@@ -120,6 +148,8 @@ def analytics(request: Request, days: str = "30", db: Session = Depends(get_db))
                 .count(),
             }
         )
+
+    weeks, growth_page, growth_total_pages, growth_total = _paginate_list(all_weeks, growth_page)
 
     return templates.TemplateResponse(
         request,
@@ -139,6 +169,11 @@ def analytics(request: Request, days: str = "30", db: Session = Depends(get_db))
             "broadcasts_sent": broadcasts_sent,
             "announcement_recipients": announcement_recipients,
             "weeks": weeks,
+            "growth_q": growth_q,
+            "growth_page": growth_page,
+            "growth_total_pages": growth_total_pages,
+            "growth_total": growth_total,
+            "page_size": PAGE_SIZE,
             "ga_configured": bool(GA_MEASUREMENT_ID),
         },
     )

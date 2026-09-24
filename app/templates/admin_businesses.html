@@ -96,7 +96,7 @@
             <td>{{ b.name }}</td>
             <td>{{ b.owner_email }}</td>
             <td>{{ b.twilio_number }}</td>
-            <td style="white-space: nowrap;">{{ b.created_at.strftime("%b %-d, %Y") }}</td>
+            <td style="white-space: nowrap;">{{ b.created_at.strftime("%b %-d, %Y %-I:%M %p") }}</td>
             <td class="wrap">{% if b.notes %}{{ b.notes }}{% else %}<span style="color: var(--text-faint);">&mdash;</span>{% endif %}</td>
             <td><a href="/admin/businesses/{{ b.id }}/edit" class="btn btn-secondary btn-sm">Edit</a></td>
             <td>
