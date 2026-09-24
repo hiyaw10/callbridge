@@ -33,7 +33,7 @@
 
   <div class="section">
     <div class="card card-pad" style="max-width: 600px;">
-      <form method="post" action="/admin/businesses/{{ business.id }}/edit">
+      <form method="post" action="/admin/businesses/{{ business.id }}/edit" id="edit-business-form">
         <div class="field">
           <label for="name">Business name</label>
           <input type="text" id="name" name="name" value="{{ business.name }}" required>
@@ -56,11 +56,27 @@
         </div>
         <div class="field">
           <label for="notes">Remarks</label>
-          <textarea id="notes" name="notes" rows="3" placeholder="Internal notes about this business&hellip;">{{ business.notes or '' }}</textarea>
+          <textarea id="notes" name="notes" rows="3" data-original="{{ business.notes or '' }}" placeholder="Internal notes about this business&hellip;">{{ business.notes or '' }}</textarea>
         </div>
         <button type="submit" class="btn btn-primary">Save changes</button>
       </form>
     </div>
   </div>
 </div>
+
+<script>
+  document.getElementById('edit-business-form').addEventListener('submit', function (e) {
+    const notes = document.getElementById('notes');
+    const original = notes.dataset.original || '';
+    const next = notes.value.trim();
+    if (original && next !== original) {
+      const confirmed = confirm(
+        next
+          ? 'Replace the existing remark?\n\nCurrent: "' + original + '"\nNew: "' + next + '"'
+          : 'Remove the existing remark?\n\nCurrent: "' + original + '"'
+      );
+      if (!confirmed) e.preventDefault();
+    }
+  });
+</script>
 {% endblock %}

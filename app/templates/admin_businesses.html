@@ -63,6 +63,11 @@
   <div class="section">
     <div class="section-header">
       <h2>Existing businesses</h2>
+      {% if show == "archived" %}
+      <a href="/admin/businesses" class="btn btn-secondary btn-sm">&larr; Back to active businesses</a>
+      {% elif archived_count %}
+      <a href="/admin/businesses?show=archived" class="btn btn-secondary btn-sm">{{ archived_count }} archived &rarr;</a>
+      {% endif %}
     </div>
     <form class="filter-bar" method="get" action="/admin/businesses">
       <div class="field grow">
@@ -73,7 +78,7 @@
         <label for="show">Show</label>
         <select id="show" name="show">
           <option value="active" {% if show != "archived" %}selected{% endif %}>Active</option>
-          <option value="archived" {% if show == "archived" %}selected{% endif %}>Archived</option>
+          <option value="archived" {% if show == "archived" %}selected{% endif %}>Archived{% if archived_count %} ({{ archived_count }}){% endif %}</option>
         </select>
       </div>
       <button type="submit" class="btn btn-secondary">Search</button>

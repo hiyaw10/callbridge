@@ -51,21 +51,39 @@ def analytics(request: Request, days: str = "30", db: Session = Depends(get_db))
     days_n = _ACTIVITY_RANGES.get(days, 30)
     cutoff = now - timedelta(days=days_n) if days_n else None
 
-    business_count = db.query(Business).count()
-    lead_count = db.query(Lead).count()
-    leads_last_30 = db.query(Lead).filter(Lead.created_at >= now - timedelta(days=30)).count()
+    # Archived businesses/leads are admin-list clutter (a churned business, a dead lead) —
+    # every count below is scoped to active rows only, so an archived business can't keep
+    # inflating "active businesses," MRR, or platform activity after it's been archived.
+    active_business_ids = [
+        b.id for b in db.query(Business.id).filter(Business.archived_at.is_(None)).all()
+    ]
+    business_count = len(active_business_ids)
+    lead_count = db.query(Lead).filter(Lead.archived_at.is_(None)).count()
+    leads_last_30 = (
+        db.query(Lead)
+        .filter(Lead.archived_at.is_(None), Lead.created_at >= now - timedelta(days=30))
+        .count()
+    )
 
     # Best-effort lead -> signup match: a lead whose email was later used as a business's
     # login. Not a tracked funnel (leads and businesses aren't linked by ID — a business is
     # created manually by an admin after the onboarding call) so this only catches the case
     # where the same email was used both times; it undercounts real conversions where it wasn't.
-    owner_emails = {b.owner_email for b in db.query(Business.owner_email).all()}
-    matched_leads = db.query(Lead).filter(Lead.email.in_(owner_emails)).count() if owner_emails else 0
+    owner_emails = {
+        b.owner_email for b in db.query(Business.owner_email).filter(Business.archived_at.is_(None)).all()
+    }
+    matched_leads = (
+        db.query(Lead).filter(Lead.archived_at.is_(None), Lead.email.in_(owner_emails)).count()
+        if owner_emails
+        else 0
+    )
 
-    call_query = db.query(Call)
-    text_query = db.query(TextMessage).filter(TextMessage.direction == "outbound")
-    job_query = db.query(Job)
-    broadcast_query = db.query(Broadcast)
+    call_query = db.query(Call).filter(Call.business_id.in_(active_business_ids))
+    text_query = db.query(TextMessage).filter(
+        TextMessage.direction == "outbound", TextMessage.business_id.in_(active_business_ids)
+    )
+    job_query = db.query(Job).filter(Job.business_id.in_(active_business_ids))
+    broadcast_query = db.query(Broadcast).filter(Broadcast.business_id.in_(active_business_ids))
     if cutoff:
         call_query = call_query.filter(Call.timestamp >= cutoff)
         text_query = text_query.filter(TextMessage.timestamp >= cutoff)
@@ -174,10 +192,20 @@ def _search_businesses(db: Session, q: str, show: str):
 @router.get("/admin/leads", dependencies=[Depends(require_admin)])
 def list_leads(request: Request, q: str = "", show: str = "active", page: int = 1, db: Session = Depends(get_db)):
     leads, page, total_pages, total = _paginate(_search_leads(db, q.strip(), show), page)
+    archived_count = db.query(Lead).filter(Lead.archived_at.isnot(None)).count()
     return templates.TemplateResponse(
         request,
         "admin_leads.html",
-        {"leads": leads, "q": q, "show": show, "page": page, "total_pages": total_pages, "total": total, "page_size": PAGE_SIZE},
+        {
+            "leads": leads,
+            "q": q,
+            "show": show,
+            "page": page,
+            "total_pages": total_pages,
+            "total": total,
+            "page_size": PAGE_SIZE,
+            "archived_count": archived_count,
+        },
     )
 
 
@@ -231,6 +259,7 @@ def list_businesses(
     request: Request, q: str = "", show: str = "active", page: int = 1, db: Session = Depends(get_db)
 ):
     businesses, page, total_pages, total = _paginate(_search_businesses(db, q.strip(), show), page)
+    archived_count = db.query(Business).filter(Business.archived_at.isnot(None)).count()
     return templates.TemplateResponse(
         request,
         "admin_businesses.html",
@@ -243,6 +272,7 @@ def list_businesses(
             "total_pages": total_pages,
             "total": total,
             "page_size": PAGE_SIZE,
+            "archived_count": archived_count,
         },
     )
 
@@ -308,6 +338,7 @@ def create_business(
                 "total_pages": total_pages,
                 "total": total,
                 "page_size": PAGE_SIZE,
+                "archived_count": db.query(Business).filter(Business.archived_at.isnot(None)).count(),
             },
             status_code=400,
         )

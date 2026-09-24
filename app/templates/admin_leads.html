@@ -28,6 +28,11 @@
       <h1>Leads</h1>
       <p>Everyone who filled out the "Book a Free Call" form, before they hit Calendly. Newest first.</p>
     </div>
+    {% if show == "archived" %}
+    <a href="/admin/leads" class="btn btn-secondary btn-sm">&larr; Back to active leads</a>
+    {% elif archived_count %}
+    <a href="/admin/leads?show=archived" class="btn btn-secondary btn-sm">{{ archived_count }} archived &rarr;</a>
+    {% endif %}
   </div>
 
   <form class="filter-bar" method="get" action="/admin/leads">
@@ -39,7 +44,7 @@
       <label for="show">Show</label>
       <select id="show" name="show">
         <option value="active" {% if show != "archived" %}selected{% endif %}>Active</option>
-        <option value="archived" {% if show == "archived" %}selected{% endif %}>Archived</option>
+        <option value="archived" {% if show == "archived" %}selected{% endif %}>Archived{% if archived_count %} ({{ archived_count }}){% endif %}</option>
       </select>
     </div>
     <button type="submit" class="btn btn-secondary">Search</button>
@@ -63,11 +68,11 @@
             <td>{% if lead.phone %}<a href="tel:{{ lead.phone }}">{{ lead.phone }}</a>{% else %}<span style="color: var(--text-faint);">&mdash;</span>{% endif %}</td>
             <td style="white-space: nowrap;">{{ lead.created_at.strftime("%b %-d, %Y %-I:%M %p") }}</td>
             <td class="wrap" style="min-width: 220px;">
-              <form method="post" action="/admin/leads/{{ lead.id }}/notes" class="inline-form">
+              <form method="post" action="/admin/leads/{{ lead.id }}/notes" class="inline-form remark-form">
                 <input type="hidden" name="q" value="{{ q }}">
                 <input type="hidden" name="show" value="{{ show }}">
                 <input type="hidden" name="page" value="{{ page }}">
-                <input type="text" name="notes" value="{{ lead.notes or '' }}" placeholder="Add a remark&hellip;">
+                <input type="text" name="notes" value="{{ lead.notes or '' }}" data-original="{{ lead.notes or '' }}" placeholder="Add a remark&hellip;">
                 <button type="submit" class="btn btn-secondary btn-sm">Save</button>
               </form>
             </td>
@@ -109,4 +114,22 @@
     {% endif %}
   </div>
 </div>
+
+<script>
+  document.querySelectorAll('.remark-form').forEach(function (form) {
+    form.addEventListener('submit', function (e) {
+      const input = form.querySelector('input[name="notes"]');
+      const original = input.dataset.original || '';
+      const next = input.value.trim();
+      if (original && next !== original) {
+        const confirmed = confirm(
+          next
+            ? 'Replace the existing remark?\n\nCurrent: "' + original + '"\nNew: "' + next + '"'
+            : 'Remove the existing remark?\n\nCurrent: "' + original + '"'
+        );
+        if (!confirmed) e.preventDefault();
+      }
+    });
+  });
+</script>
 {% endblock %}
