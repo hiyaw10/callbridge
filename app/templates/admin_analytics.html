@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}Admin — Analytics{% endblock %}
+
+{% block nav %}
+<div class="topnav">
+  <div class="topnav-inner">
+    <span class="brand">
+      <span class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+        </svg>
+      </span>
+      CallBridge Admin
+    </span>
+    <div class="nav-right">
+      <a href="/admin/businesses" class="btn btn-secondary btn-sm">Businesses</a>
+      <a href="/admin/leads" class="btn btn-secondary btn-sm">Leads</a>
+      <a href="/admin/logout" class="btn btn-secondary btn-sm">Log out</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block body %}
+<div class="container page">
+  <div class="page-header">
+    <div>
+      <h1>Analytics</h1>
+      <p>Sign-ups, activity, and revenue across every business on CallBridge.</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-label">Active Businesses</div>
+        <div class="stat-value">{{ business_count }}</div>
+        <div class="stat-sub">paying customers, all time</div>
+      </div>
+      <div class="stat-card stat-card-highlight">
+        <div class="stat-label">Estimated MRR</div>
+        <div class="stat-value">${{ "{:,}".format(mrr) }}</div>
+        <div class="stat-sub">${{ "%d"|format(mrr / business_count) if business_count else 0 }}/business/month</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Total Leads</div>
+        <div class="stat-value">{{ lead_count }}</div>
+        <div class="stat-sub">{{ leads_last_30 }} in the last 30 days</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Lead &rarr; Signup Matches</div>
+        <div class="stat-value">{{ matched_leads }}</div>
+        <div class="stat-sub">same email used to sign up; undercounts real conversions</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <h2>Growth, last 8 weeks</h2>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Week of</th><th>New Businesses</th><th>New Leads</th></tr>
+        </thead>
+        <tbody>
+          {% for week in weeks %}
+          <tr>
+            <td>{{ week.label }}</td>
+            <td>{{ week.new_businesses }}</td>
+            <td>{{ week.new_leads }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <h2>Platform activity</h2>
+    </div>
+    <form class="filter-bar" method="get" action="/admin/analytics">
+      <div class="field">
+        <label for="days">Date range</label>
+        <select id="days" name="days">
+          <option value="7" {% if days == "7" %}selected{% endif %}>Last 7 days</option>
+          <option value="30" {% if days == "30" %}selected{% endif %}>Last 30 days</option>
+          <option value="90" {% if days == "90" %}selected{% endif %}>Last 90 days</option>
+          <option value="all" {% if days == "all" %}selected{% endif %}>All time</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-secondary">Filter</button>
+    </form>
+
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-label">Calls Received</div>
+        <div class="stat-value">{{ calls_total }}</div>
+        <div class="stat-sub">{{ calls_answered }} answered &middot; {{ calls_missed }} missed</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Texts Sent</div>
+        <div class="stat-value">{{ texts_sent }}</div>
+        <div class="stat-sub">missed-call replies, review requests, and announcements</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Jobs Completed</div>
+        <div class="stat-value">{{ jobs_completed }}</div>
+        <div class="stat-sub">across all businesses</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Announcements Sent</div>
+        <div class="stat-value">{{ broadcasts_sent }}</div>
+        <div class="stat-sub">reaching {{ announcement_recipients }} customer{{ "s" if announcement_recipients != 1 else "" }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <h2>Site traffic</h2>
+    </div>
+    <div class="card card-pad" style="max-width: 640px;">
+      {% if ga_configured %}
+      <p style="margin: 0;">Google Analytics is connected. Visits, referrers, and device breakdown are in your Google Analytics dashboard &mdash; not duplicated here.</p>
+      {% else %}
+      <p style="margin: 0;">Google Analytics isn't connected yet. Create a GA4 property, then set <code>GA_MEASUREMENT_ID</code> in Railway to start tracking landing page visits.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
