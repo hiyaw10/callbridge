@@ -314,6 +314,13 @@ tbody tr:hover { background: var(--primary-light); }
 td.wrap { white-space: normal; }
 .empty-row td { color: var(--text-faint); text-align: center; padding: 2.5rem 1rem; white-space: normal; }
 
+.pagination {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;
+  margin-top: 1rem;
+}
+.pagination-info { font-size: 0.85rem; color: var(--text-muted); }
+.pagination-controls { display: flex; gap: 0.5rem; }
+
 /* --- Badges --- */
 .badge { display: inline-block; padding: 0.25rem 0.7rem; border-radius: 999px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.01em; }
 .badge-missed { background: var(--danger-bg); color: var(--danger); }

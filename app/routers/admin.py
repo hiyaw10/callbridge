@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import RedirectResponse
+from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -15,6 +16,7 @@ from app.templates_env import templates
 router = APIRouter()
 
 MONTHLY_PRICE = 99
+PAGE_SIZE = 15
 
 
 @router.get("/admin/login")
@@ -81,10 +83,10 @@ def analytics(request: Request, days: str = "30", db: Session = Depends(get_db))
     broadcasts_sent = len(broadcasts)
     announcement_recipients = sum(b.recipient_count for b in broadcasts)
 
-    # Sign-ups and leads by week, most recent 8 weeks, for a simple growth-over-time view
-    # without pulling in a charting library.
+    # Sign-ups and leads by week, most recent 8 weeks (newest first), for a simple
+    # growth-over-time view without pulling in a charting library.
     weeks = []
-    for i in range(7, -1, -1):
+    for i in range(0, 8):
         week_start = (now - timedelta(days=now.weekday() + i * 7)).replace(
             hour=0, minute=0, second=0, microsecond=0
         )
@@ -124,18 +126,151 @@ def analytics(request: Request, days: str = "30", db: Session = Depends(get_db))
     )
 
 
+def _paginate(query, page: int):
+    total = query.count()
+    total_pages = max(1, -(-total // PAGE_SIZE))  # ceil division
+    page = max(1, min(page, total_pages))
+    items = query.offset((page - 1) * PAGE_SIZE).limit(PAGE_SIZE).all()
+    return items, page, total_pages, total
+
+
+def _search_leads(db: Session, q: str, show: str):
+    query = db.query(Lead)
+    if q:
+        like = f"%{q}%"
+        query = query.filter(
+            or_(
+                Lead.contact_name.ilike(like),
+                Lead.business_name.ilike(like),
+                Lead.business_address.ilike(like),
+                Lead.email.ilike(like),
+                Lead.phone.ilike(like),
+            )
+        )
+    query = query.filter(Lead.archived_at.isnot(None)) if show == "archived" else query.filter(Lead.archived_at.is_(None))
+    return query.order_by(Lead.created_at.desc())
+
+
+def _search_businesses(db: Session, q: str, show: str):
+    query = db.query(Business)
+    if q:
+        like = f"%{q}%"
+        query = query.filter(
+            or_(
+                Business.name.ilike(like),
+                Business.owner_email.ilike(like),
+                Business.owner_phone.ilike(like),
+                Business.twilio_number.ilike(like),
+            )
+        )
+    query = (
+        query.filter(Business.archived_at.isnot(None))
+        if show == "archived"
+        else query.filter(Business.archived_at.is_(None))
+    )
+    return query.order_by(Business.created_at.desc())
+
+
 @router.get("/admin/leads", dependencies=[Depends(require_admin)])
-def list_leads(request: Request, db: Session = Depends(get_db)):
-    leads = db.query(Lead).order_by(Lead.created_at.desc()).all()
-    return templates.TemplateResponse(request, "admin_leads.html", {"leads": leads})
+def list_leads(request: Request, q: str = "", show: str = "active", page: int = 1, db: Session = Depends(get_db)):
+    leads, page, total_pages, total = _paginate(_search_leads(db, q.strip(), show), page)
+    return templates.TemplateResponse(
+        request,
+        "admin_leads.html",
+        {"leads": leads, "q": q, "show": show, "page": page, "total_pages": total_pages, "total": total, "page_size": PAGE_SIZE},
+    )
+
+
+@router.post("/admin/leads/{lead_id}/notes", dependencies=[Depends(require_admin)])
+def update_lead_notes(
+    lead_id: int,
+    request: Request,
+    notes: str = Form(""),
+    q: str = Form(""),
+    show: str = Form("active"),
+    page: int = Form(1),
+    db: Session = Depends(get_db),
+):
+    lead = db.get(Lead, lead_id)
+    if not lead:
+        raise HTTPException(status_code=404)
+    lead.notes = notes.strip() or None
+    db.add(lead)
+    db.commit()
+    return RedirectResponse(url=f"/admin/leads?q={q}&show={show}&page={page}", status_code=303)
+
+
+@router.post("/admin/leads/{lead_id}/archive", dependencies=[Depends(require_admin)])
+def archive_lead(
+    lead_id: int, q: str = Form(""), page: int = Form(1), db: Session = Depends(get_db)
+):
+    lead = db.get(Lead, lead_id)
+    if not lead:
+        raise HTTPException(status_code=404)
+    lead.archived_at = datetime.now(timezone.utc).replace(tzinfo=None)
+    db.add(lead)
+    db.commit()
+    return RedirectResponse(url=f"/admin/leads?q={q}&page={page}", status_code=303)
+
+
+@router.post("/admin/leads/{lead_id}/unarchive", dependencies=[Depends(require_admin)])
+def unarchive_lead(
+    lead_id: int, q: str = Form(""), page: int = Form(1), db: Session = Depends(get_db)
+):
+    lead = db.get(Lead, lead_id)
+    if not lead:
+        raise HTTPException(status_code=404)
+    lead.archived_at = None
+    db.add(lead)
+    db.commit()
+    return RedirectResponse(url=f"/admin/leads?q={q}&show=archived&page={page}", status_code=303)
 
 
 @router.get("/admin/businesses", dependencies=[Depends(require_admin)])
-def list_businesses(request: Request, db: Session = Depends(get_db)):
-    businesses = db.query(Business).order_by(Business.created_at.desc()).all()
+def list_businesses(
+    request: Request, q: str = "", show: str = "active", page: int = 1, db: Session = Depends(get_db)
+):
+    businesses, page, total_pages, total = _paginate(_search_businesses(db, q.strip(), show), page)
     return templates.TemplateResponse(
-        request, "admin_businesses.html", {"businesses": businesses, "error": None}
+        request,
+        "admin_businesses.html",
+        {
+            "businesses": businesses,
+            "error": None,
+            "q": q,
+            "show": show,
+            "page": page,
+            "total_pages": total_pages,
+            "total": total,
+            "page_size": PAGE_SIZE,
+        },
     )
+
+
+@router.post("/admin/businesses/{business_id}/archive", dependencies=[Depends(require_admin)])
+def archive_business(
+    business_id: int, q: str = Form(""), page: int = Form(1), db: Session = Depends(get_db)
+):
+    business = db.get(Business, business_id)
+    if not business:
+        raise HTTPException(status_code=404)
+    business.archived_at = datetime.now(timezone.utc).replace(tzinfo=None)
+    db.add(business)
+    db.commit()
+    return RedirectResponse(url=f"/admin/businesses?q={q}&page={page}", status_code=303)
+
+
+@router.post("/admin/businesses/{business_id}/unarchive", dependencies=[Depends(require_admin)])
+def unarchive_business(
+    business_id: int, q: str = Form(""), page: int = Form(1), db: Session = Depends(get_db)
+):
+    business = db.get(Business, business_id)
+    if not business:
+        raise HTTPException(status_code=404)
+    business.archived_at = None
+    db.add(business)
+    db.commit()
+    return RedirectResponse(url=f"/admin/businesses?q={q}&show=archived&page={page}", status_code=303)
 
 
 @router.post("/admin/businesses", dependencies=[Depends(require_admin)])
@@ -160,13 +295,19 @@ def create_business(
         db.commit()
     except IntegrityError:
         db.rollback()
-        businesses = db.query(Business).order_by(Business.created_at.desc()).all()
+        businesses, page, total_pages, total = _paginate(_search_businesses(db, "", "active"), 1)
         return templates.TemplateResponse(
             request,
             "admin_businesses.html",
             {
                 "businesses": businesses,
                 "error": "A business with that owner email or Twilio number already exists.",
+                "q": "",
+                "show": "active",
+                "page": page,
+                "total_pages": total_pages,
+                "total": total,
+                "page_size": PAGE_SIZE,
             },
             status_code=400,
         )
@@ -192,6 +333,7 @@ def edit_business_submit(
     owner_phone: str = Form(...),
     twilio_number: str = Form(...),
     password: str = Form(""),
+    notes: str = Form(""),
     db: Session = Depends(get_db),
 ):
     business = db.get(Business, business_id)
@@ -202,6 +344,7 @@ def edit_business_submit(
     business.owner_email = owner_email.strip().lower()
     business.owner_phone = owner_phone.strip()
     business.twilio_number = twilio_number.strip()
+    business.notes = notes.strip() or None
     if password.strip():
         business.password_hash = hash_password(password.strip())
 
