@@ -23,6 +23,9 @@ class Business(Base):
     trial_ends_at: Mapped[datetime | None] = mapped_column(nullable=True)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
+    # Internal admin notes about this business — never shown to the business owner.
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+
     # NULL means "use the default template" — see app/services/templates.py
     missed_call_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     review_request_message: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -144,6 +147,9 @@ class Lead(Base):
     # Optional — required on the form is just email now; nullable so the column allows it.
     phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+
+    # Internal admin notes (e.g. "called, not interested", "follow up next week").
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
 class SmsOptOut(Base):

@@ -61,23 +61,35 @@
   </div>
 
   <div class="section">
-    <h2>Existing businesses</h2>
+    <div class="section-header">
+      <h2>Existing businesses</h2>
+    </div>
+    <form class="filter-bar" method="get" action="/admin/businesses">
+      <div class="field grow">
+        <label for="q">Search</label>
+        <input type="text" id="q" name="q" value="{{ q }}" placeholder="Name, email, phone, or Twilio number">
+      </div>
+      <button type="submit" class="btn btn-secondary">Search</button>
+      {% if q %}<a href="/admin/businesses" class="btn btn-secondary">Clear</a>{% endif %}
+    </form>
     <div class="table-wrap">
       <table>
         <thead>
-          <tr><th>Name</th><th>Owner email</th><th>Twilio number</th><th>Added</th><th></th></tr>
+          <tr><th>#</th><th>Name</th><th>Owner email</th><th>Twilio number</th><th>Added</th><th>Remarks</th><th></th></tr>
         </thead>
         <tbody>
           {% for b in businesses %}
           <tr>
+            <td>{{ loop.index }}</td>
             <td>{{ b.name }}</td>
             <td>{{ b.owner_email }}</td>
             <td>{{ b.twilio_number }}</td>
-            <td>{{ b.created_at.strftime("%b %-d, %Y") }}</td>
+            <td style="white-space: nowrap;">{{ b.created_at.strftime("%b %-d, %Y") }}</td>
+            <td class="wrap">{% if b.notes %}{{ b.notes }}{% else %}<span style="color: var(--text-faint);">&mdash;</span>{% endif %}</td>
             <td><a href="/admin/businesses/{{ b.id }}/edit" class="btn btn-secondary btn-sm">Edit</a></td>
           </tr>
           {% else %}
-          <tr class="empty-row"><td colspan="5">No businesses yet.</td></tr>
+          <tr class="empty-row"><td colspan="7">{% if q %}No businesses match "{{ q }}".{% else %}No businesses yet.{% endif %}</td></tr>
           {% endfor %}
         </tbody>
       </table>

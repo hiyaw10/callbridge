@@ -26,28 +26,45 @@
   <div class="page-header">
     <div>
       <h1>Leads</h1>
-      <p>Everyone who filled out the "Book a Free Call" form, before they hit Calendly.</p>
+      <p>Everyone who filled out the "Book a Free Call" form, before they hit Calendly. Newest first.</p>
     </div>
   </div>
+
+  <form class="filter-bar" method="get" action="/admin/leads">
+    <div class="field grow">
+      <label for="q">Search</label>
+      <input type="text" id="q" name="q" value="{{ q }}" placeholder="Name, business, address, email, or phone">
+    </div>
+    <button type="submit" class="btn btn-secondary">Search</button>
+    {% if q %}<a href="/admin/leads" class="btn btn-secondary">Clear</a>{% endif %}
+  </form>
 
   <div class="section">
     <div class="table-wrap">
       <table>
         <thead>
-          <tr><th>Name</th><th>Business</th><th>Address</th><th>Email</th><th>Phone</th><th>Submitted</th></tr>
+          <tr><th>#</th><th>Name</th><th>Business</th><th>Address</th><th>Email</th><th>Phone</th><th>Submitted</th><th>Remarks</th></tr>
         </thead>
         <tbody>
           {% for lead in leads %}
           <tr>
+            <td>{{ loop.index }}</td>
             <td>{{ lead.contact_name }}</td>
             <td>{{ lead.business_name }}</td>
             <td class="wrap">{{ lead.business_address }}</td>
             <td><a href="mailto:{{ lead.email }}">{{ lead.email }}</a></td>
             <td>{% if lead.phone %}<a href="tel:{{ lead.phone }}">{{ lead.phone }}</a>{% else %}<span style="color: var(--text-faint);">&mdash;</span>{% endif %}</td>
-            <td>{{ lead.created_at.strftime("%b %-d, %Y %-I:%M %p") }}</td>
+            <td style="white-space: nowrap;">{{ lead.created_at.strftime("%b %-d, %Y %-I:%M %p") }}</td>
+            <td class="wrap" style="min-width: 220px;">
+              <form method="post" action="/admin/leads/{{ lead.id }}/notes" class="inline-form">
+                <input type="hidden" name="q" value="{{ q }}">
+                <input type="text" name="notes" value="{{ lead.notes or '' }}" placeholder="Add a remark&hellip;">
+                <button type="submit" class="btn btn-secondary btn-sm">Save</button>
+              </form>
+            </td>
           </tr>
           {% else %}
-          <tr class="empty-row"><td colspan="6">No leads yet.</td></tr>
+          <tr class="empty-row"><td colspan="8">{% if q %}No leads match "{{ q }}".{% else %}No leads yet.{% endif %}</td></tr>
           {% endfor %}
         </tbody>
       </table>

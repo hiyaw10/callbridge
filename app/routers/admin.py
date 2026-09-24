@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import RedirectResponse
+from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -81,10 +82,10 @@ def analytics(request: Request, days: str = "30", db: Session = Depends(get_db))
     broadcasts_sent = len(broadcasts)
     announcement_recipients = sum(b.recipient_count for b in broadcasts)
 
-    # Sign-ups and leads by week, most recent 8 weeks, for a simple growth-over-time view
-    # without pulling in a charting library.
+    # Sign-ups and leads by week, most recent 8 weeks (newest first), for a simple
+    # growth-over-time view without pulling in a charting library.
     weeks = []
-    for i in range(7, -1, -1):
+    for i in range(0, 8):
         week_start = (now - timedelta(days=now.weekday() + i * 7)).replace(
             hour=0, minute=0, second=0, microsecond=0
         )
@@ -124,17 +125,65 @@ def analytics(request: Request, days: str = "30", db: Session = Depends(get_db))
     )
 
 
+def _search_leads(db: Session, q: str):
+    query = db.query(Lead)
+    if q:
+        like = f"%{q}%"
+        query = query.filter(
+            or_(
+                Lead.contact_name.ilike(like),
+                Lead.business_name.ilike(like),
+                Lead.business_address.ilike(like),
+                Lead.email.ilike(like),
+                Lead.phone.ilike(like),
+            )
+        )
+    return query.order_by(Lead.created_at.desc()).all()
+
+
+def _search_businesses(db: Session, q: str):
+    query = db.query(Business)
+    if q:
+        like = f"%{q}%"
+        query = query.filter(
+            or_(
+                Business.name.ilike(like),
+                Business.owner_email.ilike(like),
+                Business.owner_phone.ilike(like),
+                Business.twilio_number.ilike(like),
+            )
+        )
+    return query.order_by(Business.created_at.desc()).all()
+
+
 @router.get("/admin/leads", dependencies=[Depends(require_admin)])
-def list_leads(request: Request, db: Session = Depends(get_db)):
-    leads = db.query(Lead).order_by(Lead.created_at.desc()).all()
-    return templates.TemplateResponse(request, "admin_leads.html", {"leads": leads})
+def list_leads(request: Request, q: str = "", db: Session = Depends(get_db)):
+    leads = _search_leads(db, q.strip())
+    return templates.TemplateResponse(request, "admin_leads.html", {"leads": leads, "q": q})
+
+
+@router.post("/admin/leads/{lead_id}/notes", dependencies=[Depends(require_admin)])
+def update_lead_notes(
+    lead_id: int,
+    request: Request,
+    notes: str = Form(""),
+    q: str = Form(""),
+    db: Session = Depends(get_db),
+):
+    lead = db.get(Lead, lead_id)
+    if not lead:
+        raise HTTPException(status_code=404)
+    lead.notes = notes.strip() or None
+    db.add(lead)
+    db.commit()
+    return RedirectResponse(url=f"/admin/leads?q={q}", status_code=303)
 
 
 @router.get("/admin/businesses", dependencies=[Depends(require_admin)])
-def list_businesses(request: Request, db: Session = Depends(get_db)):
-    businesses = db.query(Business).order_by(Business.created_at.desc()).all()
+def list_businesses(request: Request, q: str = "", db: Session = Depends(get_db)):
+    businesses = _search_businesses(db, q.strip())
     return templates.TemplateResponse(
-        request, "admin_businesses.html", {"businesses": businesses, "error": None}
+        request, "admin_businesses.html", {"businesses": businesses, "error": None, "q": q}
     )
 
 
@@ -167,6 +216,7 @@ def create_business(
             {
                 "businesses": businesses,
                 "error": "A business with that owner email or Twilio number already exists.",
+                "q": "",
             },
             status_code=400,
         )
@@ -192,6 +242,7 @@ def edit_business_submit(
     owner_phone: str = Form(...),
     twilio_number: str = Form(...),
     password: str = Form(""),
+    notes: str = Form(""),
     db: Session = Depends(get_db),
 ):
     business = db.get(Business, business_id)
@@ -202,6 +253,7 @@ def edit_business_submit(
     business.owner_email = owner_email.strip().lower()
     business.owner_phone = owner_phone.strip()
     business.twilio_number = twilio_number.strip()
+    business.notes = notes.strip() or None
     if password.strip():
         business.password_hash = hash_password(password.strip())
 

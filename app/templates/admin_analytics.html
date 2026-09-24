@@ -59,14 +59,16 @@
     <div class="section-header">
       <h2>Growth, last 8 weeks</h2>
     </div>
+    <p style="margin-top: -0.5rem; color: var(--text-muted); font-size: 0.88rem;">Most recent week first.</p>
     <div class="table-wrap">
       <table>
         <thead>
-          <tr><th>Week of</th><th>New Businesses</th><th>New Leads</th></tr>
+          <tr><th>#</th><th>Week of</th><th>New Businesses</th><th>New Leads</th></tr>
         </thead>
         <tbody>
           {% for week in weeks %}
           <tr>
+            <td>{{ loop.index }}</td>
             <td>{{ week.label }}</td>
             <td>{{ week.new_businesses }}</td>
             <td>{{ week.new_leads }}</td>

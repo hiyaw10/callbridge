@@ -54,6 +54,10 @@
           <label for="password">Reset password (optional)</label>
           <input type="text" id="password" name="password" placeholder="Leave blank to keep current password">
         </div>
+        <div class="field">
+          <label for="notes">Remarks</label>
+          <textarea id="notes" name="notes" rows="3" placeholder="Internal notes about this business&hellip;">{{ business.notes or '' }}</textarea>
+        </div>
         <button type="submit" class="btn btn-primary">Save changes</button>
       </form>
     </div>
