@@ -57,9 +57,18 @@
 
   <div class="section">
     <div class="section-header">
-      <h2>Growth, last 8 weeks</h2>
+      <h2>Growth by week</h2>
     </div>
-    <p style="margin-top: -0.5rem; color: var(--text-muted); font-size: 0.88rem;">Most recent week first.</p>
+    <p style="margin-top: -0.5rem; color: var(--text-muted); font-size: 0.88rem;">Every week since the first sign-up or lead, most recent first.</p>
+    <form class="filter-bar" method="get" action="/admin/analytics">
+      <input type="hidden" name="days" value="{{ days }}">
+      <div class="field grow">
+        <label for="growth_q">Search</label>
+        <input type="text" id="growth_q" name="growth_q" value="{{ growth_q }}" placeholder="e.g. Sep 2026">
+      </div>
+      <button type="submit" class="btn btn-secondary">Search</button>
+      {% if growth_q %}<a href="/admin/analytics?days={{ days }}" class="btn btn-secondary">Clear</a>{% endif %}
+    </form>
     <div class="table-wrap">
       <table>
         <thead>
@@ -68,15 +77,31 @@
         <tbody>
           {% for week in weeks %}
           <tr>
-            <td>{{ loop.index }}</td>
+            <td>{{ (growth_page - 1) * page_size + loop.index }}</td>
             <td>{{ week.label }}</td>
             <td>{{ week.new_businesses }}</td>
             <td>{{ week.new_leads }}</td>
           </tr>
+          {% else %}
+          <tr class="empty-row"><td colspan="4">{% if growth_q %}No weeks match "{{ growth_q }}".{% else %}No data yet.{% endif %}</td></tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
+
+    {% if growth_total_pages > 1 %}
+    <div class="pagination">
+      <span class="pagination-info">Page {{ growth_page }} of {{ growth_total_pages }} &middot; {{ growth_total }} week{{ "s" if growth_total != 1 else "" }}</span>
+      <div class="pagination-controls">
+        {% if growth_page > 1 %}
+        <a href="/admin/analytics?days={{ days }}&growth_q={{ growth_q }}&growth_page={{ growth_page - 1 }}" class="btn btn-secondary btn-sm">&larr; Prev</a>
+        {% endif %}
+        {% if growth_page < growth_total_pages %}
+        <a href="/admin/analytics?days={{ days }}&growth_q={{ growth_q }}&growth_page={{ growth_page + 1 }}" class="btn btn-secondary btn-sm">Next &rarr;</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
   </div>
 
   <div class="section">
@@ -84,6 +109,7 @@
       <h2>Platform activity</h2>
     </div>
     <form class="filter-bar" method="get" action="/admin/analytics">
+      <input type="hidden" name="growth_q" value="{{ growth_q }}">
       <div class="field">
         <label for="days">Date range</label>
         <select id="days" name="days">
