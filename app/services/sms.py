@@ -17,6 +17,7 @@ def send_sms(
     to_number: str,
     body: str,
     call_id: int | None = None,
+    broadcast_id: int | None = None,
     request: Request | None = None,
 ) -> TextMessage:
     error_code = None
@@ -46,6 +47,7 @@ def send_sms(
     message = TextMessage(
         business_id=business.id,
         call_id=call_id,
+        broadcast_id=broadcast_id,
         direction="outbound",
         body=body,
         status=status,
