@@ -16,6 +16,14 @@ class Business(Base):
     owner_phone: Mapped[str] = mapped_column(String(20))  # weekly summary text destination
     password_hash: Mapped[str] = mapped_column(String(255))
     twilio_number: Mapped[str] = mapped_column(String(20), unique=True, index=True)
+    # What this business actually pays, independent of the published Starter/Growth
+    # landing-page prices — the parameter that makes a given business's bill higher or
+    # lower than another's (an upsell, a negotiated rate, a promo). Analytics MRR sums
+    # this across businesses rather than assuming everyone pays the same amount.
+    # Python-side default (39) is what a newly created Business gets if the admin form
+    # ever omits it; server_default (99) only backfills rows that existed before this
+    # column did, which were all on the original $99 plan.
+    monthly_price: Mapped[int] = mapped_column(default=39, server_default="99")
     billing_cycle: Mapped[str] = mapped_column(String(20), default="monthly")
     # IANA name (e.g. "America/Chicago"). All timestamps are stored in UTC — this only
     # controls how they're displayed. Defaults to Iowa; editable in Settings.
