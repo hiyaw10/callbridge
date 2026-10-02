@@ -15,7 +15,6 @@ from app.templates_env import templates
 
 router = APIRouter()
 
-MONTHLY_PRICE = 99
 PAGE_SIZE = 15
 
 
@@ -68,10 +67,14 @@ def analytics(
     # Archived businesses/leads are admin-list clutter (a churned business, a dead lead) —
     # every count below is scoped to active rows only, so an archived business can't keep
     # inflating "active businesses," MRR, or platform activity after it's been archived.
-    active_business_ids = [
-        b.id for b in db.query(Business.id).filter(Business.archived_at.is_(None)).all()
-    ]
+    active_businesses = (
+        db.query(Business.id, Business.monthly_price).filter(Business.archived_at.is_(None)).all()
+    )
+    active_business_ids = [b.id for b in active_businesses]
     business_count = len(active_business_ids)
+    # Each business pays its own monthly_price (published rate or a custom negotiated
+    # amount) — summing the real per-business amount instead of assuming a flat price.
+    mrr = sum(b.monthly_price for b in active_businesses)
     lead_count = db.query(Lead).filter(Lead.archived_at.is_(None)).count()
     leads_last_30 = (
         db.query(Lead)
@@ -156,7 +159,7 @@ def analytics(
         "admin_analytics.html",
         {
             "business_count": business_count,
-            "mrr": business_count * MONTHLY_PRICE,
+            "mrr": mrr,
             "lead_count": lead_count,
             "leads_last_30": leads_last_30,
             "matched_leads": matched_leads,
@@ -346,6 +349,7 @@ def create_business(
     owner_phone: str = Form(...),
     password: str = Form(...),
     twilio_number: str = Form(...),
+    monthly_price: int = Form(39),
     db: Session = Depends(get_db),
 ):
     business = Business(
@@ -354,6 +358,7 @@ def create_business(
         owner_phone=owner_phone.strip(),
         password_hash=hash_password(password),
         twilio_number=twilio_number.strip(),
+        monthly_price=monthly_price,
     )
     db.add(business)
     try:
@@ -398,6 +403,7 @@ def edit_business_submit(
     owner_email: str = Form(...),
     owner_phone: str = Form(...),
     twilio_number: str = Form(...),
+    monthly_price: int = Form(...),
     password: str = Form(""),
     notes: str = Form(""),
     db: Session = Depends(get_db),
@@ -410,6 +416,7 @@ def edit_business_submit(
     business.owner_email = owner_email.strip().lower()
     business.owner_phone = owner_phone.strip()
     business.twilio_number = twilio_number.strip()
+    business.monthly_price = monthly_price
     business.notes = notes.strip() or None
     if password.strip():
         business.password_hash = hash_password(password.strip())
