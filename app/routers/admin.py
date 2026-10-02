@@ -72,8 +72,8 @@ def analytics(
     )
     active_business_ids = [b.id for b in active_businesses]
     business_count = len(active_business_ids)
-    # Each business pays its own monthly_price (Starter, Growth, or a custom rate) —
-    # summing the real per-business amount instead of assuming a flat price per business.
+    # Each business pays its own monthly_price (published rate or a custom negotiated
+    # amount) — summing the real per-business amount instead of assuming a flat price.
     mrr = sum(b.monthly_price for b in active_businesses)
     lead_count = db.query(Lead).filter(Lead.archived_at.is_(None)).count()
     leads_last_30 = (

@@ -581,6 +581,10 @@ td.wrap { white-space: normal; }
   margin: 2.5rem auto 1.5rem;
   align-items: start;
 }
+.plan-solo {
+  max-width: 400px;
+  margin: 2.5rem auto 1.5rem;
+}
 .plan-card {
   padding: 2.25rem 2rem;
   text-align: center;
@@ -607,6 +611,15 @@ td.wrap { white-space: normal; }
   padding: 0.3rem 0.9rem;
   border-radius: 999px;
   white-space: nowrap;
+}
+.plan-eyebrow {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent-dark, var(--text-muted));
+  margin-bottom: 0.6rem;
 }
 .plan-name { font-family: var(--font-display); font-size: 1.25rem; font-weight: 600; margin-bottom: 0.4rem; }
 .plan-price { margin-bottom: 0.35rem; }
