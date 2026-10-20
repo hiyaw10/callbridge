@@ -168,6 +168,7 @@ See `--help` for the caller, business number, and `--sid` options. Reusing a
 | `ADMIN_TOKEN` | Shared secret for `/admin`. **Must** be a long random value in prod. |
 | `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` | Blank locally to simulate SMS and skip signature validation. Set both to go live. In prod they are required, or webhooks are unauthenticated. |
 | `PUBLIC_BASE_URL` | The deployment's public URL, no trailing slash. Used to register SMS delivery-status callbacks for texts sent by the cron scripts, which have no live request to derive it from. |
+| `LEGAL_ENTITY_NAME` | The company name shown on the privacy policy and terms pages. Defaults to `CallBridge`; set it to the exact registered name (for example `CallBridge LLC`) once the company exists. |
 | `CALENDLY_URL` | Where `/book-a-call` sends prospects after they submit. Defaults to the 30 minute event; point it at the event type the landing page promises. |
 | `GA_MEASUREMENT_ID` | Google Analytics 4 ID (`G-XXXXXXXXXX`). The tracking tag only renders when this is set, so local and staging traffic never reach the real property. |
 | `SENTRY_DSN` | Optional. Reports unhandled errors to Sentry in addition to logs. |
