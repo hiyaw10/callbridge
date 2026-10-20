@@ -84,6 +84,16 @@ def opt_in_policy(request: Request):
     return templates.TemplateResponse(request, "opt_in_policy.html")
 
 
+@fastapi_app.get("/legal/privacy")
+def privacy_policy(request: Request):
+    return templates.TemplateResponse(request, "privacy_policy.html")
+
+
+@fastapi_app.get("/legal/terms")
+def terms_of_service(request: Request):
+    return templates.TemplateResponse(request, "terms.html")
+
+
 @fastapi_app.get("/health")
 def health():
     try:

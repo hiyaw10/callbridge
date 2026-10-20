@@ -35,3 +35,8 @@ CALENDLY_URL = os.environ.get("CALENDLY_URL", "https://calendly.com/hiyawamanuel
 # tracking script only renders in base.html when this is present, so local/dev traffic
 # never reports to the real property.
 GA_MEASUREMENT_ID = os.environ.get("GA_MEASUREMENT_ID", "")
+
+# The legal entity named on the privacy policy and terms pages. Set this to the exact
+# registered name (for example "CallBridge LLC") once the company exists; Twilio's
+# toll-free verification expects it to match the name on the IRS and state records.
+LEGAL_ENTITY_NAME = os.environ.get("LEGAL_ENTITY_NAME", "CallBridge")
