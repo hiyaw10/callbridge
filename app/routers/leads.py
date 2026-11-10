@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, Form, Request
@@ -27,6 +28,7 @@ def book_a_call_submit(
     business_address: str = Form(...),
     email: str = Form(...),
     phone: str = Form(""),
+    sms_consent: str = Form(""),
     db: Session = Depends(get_db),
 ):
     lead = Lead(
@@ -35,6 +37,10 @@ def book_a_call_submit(
         business_address=business_address.strip(),
         email=email.strip(),
         phone=phone.strip() or None,
+        # Only counts when there is a number to text; the box is unchecked by default.
+        sms_consent_at=datetime.now(timezone.utc).replace(tzinfo=None)
+        if sms_consent and phone.strip()
+        else None,
     )
     db.add(lead)
     db.commit()

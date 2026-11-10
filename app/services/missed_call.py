@@ -35,6 +35,18 @@ ANSWERED_BY_MAP = {
 }
 
 
+def alert_owner_of_missed_call(
+    db: Session, business: Business, caller_number: str, request: Request | None = None
+) -> None:
+    """Texts the business owner that a call was missed, from the verified CallBridge number.
+    Deliberately not linked to the Call row: that link is what shows a message in the call's
+    customer thread on the dashboard, and this one only goes to the owner."""
+    if not business.owner_phone:
+        return
+    body = f"CallBridge: missed call from {caller_number}. Tap to call back. Reply STOP to opt out."
+    send_sms(db, business, business.owner_phone, body, request=request, audience="owner")
+
+
 def handle_call_status(
     db: Session,
     business: Business,
@@ -79,6 +91,7 @@ def handle_call_status(
     db.refresh(call)
 
     if mapped_status == "missed":
+        alert_owner_of_missed_call(db, business, caller_number, request)
         body = render_missed_call_message(business)
         send_sms(db, business, caller_number, body, call_id=call.id, request=request)
 
@@ -109,6 +122,7 @@ def apply_amd_result(
 
     if new_status == "missed" and not call.text_messages:
         business = db.query(Business).filter(Business.id == call.business_id).first()
+        alert_owner_of_missed_call(db, business, call.caller_number, request)
         body = render_missed_call_message(business)
         send_sms(db, business, call.caller_number, body, call_id=call.id, request=request)
 
