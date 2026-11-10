@@ -84,6 +84,11 @@ def opt_in_policy(request: Request):
     return templates.TemplateResponse(request, "opt_in_policy.html")
 
 
+@fastapi_app.get("/legal/sms-consent")
+def sms_consent(request: Request):
+    return templates.TemplateResponse(request, "sms_consent.html")
+
+
 @fastapi_app.get("/legal/privacy")
 def privacy_policy(request: Request):
     return templates.TemplateResponse(request, "privacy_policy.html")
