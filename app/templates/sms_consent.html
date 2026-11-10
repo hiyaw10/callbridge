@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Text Message Consent | CallBridge{% endblock %}
+{% block meta_description %}The notice that tells callers a business using CallBridge may text them back after a missed call, the messages they can expect, and how to stop them.{% endblock %}
+
+{% block body %}
+<div class="container" style="padding: 3rem 0 4rem; max-width: 720px;">
+  <h1>Text Message Consent</h1>
+  <p class="lede" style="max-width: none;">This page shows the exact notice callers see before a business that uses CallBridge texts them, the messages they can expect, and how to stop them. {{ LEGAL_ENTITY_NAME }} operates CallBridge.</p>
+
+  <div class="card card-pad" style="margin: 2rem 0;">
+    <h2>The consent notice</h2>
+    <p>Every business that uses CallBridge posts this notice where customers find its phone number, such as its website, its Google Business listing, and its voicemail greeting:</p>
+    <blockquote style="margin: 1rem 0; padding: 1rem 1.25rem; border-left: 4px solid var(--brand, #0a3c68); background: rgba(10, 60, 104, 0.06); border-radius: 6px; color: inherit;">
+      <strong>Text message notice:</strong> By calling this number you agree that if we miss your call, we may text you back at the number you called from about your call and how we can help. This is a reply to your own call. Message and data rates may apply. Reply <strong>STOP</strong> to opt out or <strong>HELP</strong> for help. Consent is not a condition of buying anything. See our <a href="/legal/privacy">Privacy Policy</a> and <a href="/legal/terms">Terms of Service</a>.
+    </blockquote>
+    <p>The agreement to receive texts is separate from the Privacy Policy and Terms of Service, which are linked for reference only.</p>
+  </div>
+
+  <div class="card card-pad" style="margin: 2rem 0;">
+    <h2>What text messages you will receive</h2>
+    <ul style="color: var(--text-muted); line-height: 1.8;">
+      <li><strong>A reply to a missed call.</strong> One text sent only to a number that just called the business and was not answered. Example: <em>"Sorry we missed you — this is Acme Plumbing, how can we help?"</em></li>
+      <li><strong>A review request.</strong> Sent only after the business marks your job complete, to the number you gave the business for that job.</li>
+      <li><strong>Updates from the business.</strong> Sent only to customers who have agreed to receive them from that business.</li>
+    </ul>
+    <p>We do not send marketing to purchased, rented, or scraped lists, and we never text a number that has not contacted the business or been given to it by the customer.</p>
+  </div>
+
+  <div class="card card-pad" style="margin: 2rem 0;">
+    <h2>How often</h2>
+    <p>Message frequency varies. A missed call produces one reply text. Further texts happen only if you reply and the business answers you.</p>
+  </div>
+
+  <div class="card card-pad" style="margin: 2rem 0;">
+    <h2>Stopping messages and getting help</h2>
+    <ul style="color: var(--text-muted); line-height: 1.8;">
+      <li>Reply <strong>STOP</strong> to any message to opt out. No further texts will be sent to your number from that business.</li>
+      <li>Reply <strong>HELP</strong> for help, or contact us at <a href="mailto:support@callbridgeapp.com">support@callbridgeapp.com</a> or <a href="tel:+18335886479">+1 (833) 588-6479</a>.</li>
+      <li>Message and data rates may apply. Carriers are not liable for delayed or undelivered messages.</li>
+    </ul>
+  </div>
+
+  <div class="card card-pad" style="margin: 2rem 0;">
+    <h2>Your information</h2>
+    <p style="margin: 0;">We do not share mobile phone numbers, text message opt-in data, or consent information with third parties or affiliates for their marketing or promotional purposes. Read more in our <a href="/legal/privacy">Privacy Policy</a> and <a href="/legal/opt-in-policy">Opt In &amp; Consent Policy</a>.</p>
+  </div>
+</div>
+{% endblock %}
