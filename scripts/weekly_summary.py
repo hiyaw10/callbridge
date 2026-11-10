@@ -32,7 +32,7 @@ def main():
                 .count()
             )
             body = f"You missed {missed_count} call{'s' if missed_count != 1 else ''} this week."
-            send_sms(db, business, business.owner_phone, body)
+            send_sms(db, business, business.owner_phone, body, audience="owner")
 
         db.commit()
         print(f"Sent {len(businesses)} weekly summary text(s).")

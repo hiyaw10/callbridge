@@ -6,6 +6,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
 from app.auth import get_current_business
+from app.config import CUSTOMER_TEXTS_ENABLED
 from app.db import get_db
 from app.models import Broadcast, Business, Call, Job, SmsOptOut, TextMessage
 from app.services.localtime import TIMEZONE_CHOICES
@@ -200,7 +201,7 @@ def broadcast_send(
     message = message.strip()
     recipients = _broadcast_recipients(db, business)
     result = None
-    if message and recipients:
+    if message and recipients and CUSTOMER_TEXTS_ENABLED:
         broadcast = Broadcast(business_id=business.id, message=message, recipient_count=len(recipients))
         db.add(broadcast)
         db.commit()
@@ -210,7 +211,7 @@ def broadcast_send(
         failed = 0
         for phone in recipients:
             text = send_sms(db, business, phone, message, broadcast_id=broadcast.id, request=request)
-            if text.status in ("sent", "delivered"):
+            if text and text.status in ("sent", "delivered"):
                 sent += 1
             else:
                 failed += 1
@@ -228,6 +229,7 @@ def broadcast_send(
             "business": business,
             "recipient_count": len(recipients),
             "result": result,
+            "texting_paused": not CUSTOMER_TEXTS_ENABLED,
         },
     )
 

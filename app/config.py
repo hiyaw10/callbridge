@@ -40,3 +40,13 @@ GA_MEASUREMENT_ID = os.environ.get("GA_MEASUREMENT_ID", "")
 # registered name (for example "CallBridge LLC") once the company exists; Twilio's
 # toll-free verification expects it to match the name on the IRS and state records.
 LEGAL_ENTITY_NAME = os.environ.get("LEGAL_ENTITY_NAME", "CallBridge")
+
+# Twilio's toll-free verification for the CallBridge number covers messages CallBridge itself
+# sends to business owners (missed-call alerts, login codes, the weekly summary). Texts to a
+# business's customers need a sender registered for that business, so they stay paused until
+# each business has one. Set CUSTOMER_TEXTS_ENABLED=true to send them again.
+CUSTOMER_TEXTS_ENABLED = os.environ.get("CUSTOMER_TEXTS_ENABLED", "").lower() in ("1", "true", "yes")
+
+# The verified number owner texts are sent from. Falls back to the business's own number
+# when unset (local dev).
+OWNER_TEXT_FROM_NUMBER = os.environ.get("OWNER_TEXT_FROM_NUMBER", "")

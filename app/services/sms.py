@@ -1,3 +1,4 @@
+import logging
 import uuid
 
 from fastapi import Request
@@ -5,8 +6,16 @@ from sqlalchemy.orm import Session
 from twilio.base.exceptions import TwilioRestException
 from twilio.rest import Client
 
-from app.config import PUBLIC_BASE_URL, TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN
+from app.config import (
+    CUSTOMER_TEXTS_ENABLED,
+    OWNER_TEXT_FROM_NUMBER,
+    PUBLIC_BASE_URL,
+    TWILIO_ACCOUNT_SID,
+    TWILIO_AUTH_TOKEN,
+)
 from app.models import Business, TextMessage
+
+logger = logging.getLogger("callbridge")
 
 _client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN) if TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN else None
 
@@ -19,7 +28,16 @@ def send_sms(
     call_id: int | None = None,
     broadcast_id: int | None = None,
     request: Request | None = None,
-) -> TextMessage:
+    audience: str = "customer",
+) -> TextMessage | None:
+    """audience is "owner" for texts CallBridge sends to the business owner (sent from the
+    verified CallBridge number) or "customer" for texts to the business's callers and
+    customers, which are paused unless CUSTOMER_TEXTS_ENABLED is set. Returns None when a
+    customer text is paused."""
+    if audience == "customer" and not CUSTOMER_TEXTS_ENABLED:
+        logger.info("Customer texts are paused, not sending to %s for business %s", to_number, business.id)
+        return None
+    from_number = (OWNER_TEXT_FROM_NUMBER if audience == "owner" else "") or business.twilio_number
     error_code = None
     if _client:
         # Accepting the send only means Twilio queued it — the carrier can still bounce it
@@ -30,7 +48,7 @@ def send_sms(
         base_url = str(request.base_url).rstrip("/") if request is not None else PUBLIC_BASE_URL
         status_callback = f"{base_url}/webhooks/twilio/sms-status" if base_url else None
         try:
-            create_kwargs = {"to": to_number, "from_": business.twilio_number, "body": body}
+            create_kwargs = {"to": to_number, "from_": from_number, "body": body}
             if status_callback:
                 create_kwargs["status_callback"] = status_callback
             twilio_message = _client.messages.create(**create_kwargs)
@@ -42,7 +60,7 @@ def send_sms(
         # No Twilio credentials configured (local dev) — simulate the send so the
         # rest of the flow (DB logging, dashboard) can be exercised without a live account.
         sid, status = f"SIMULATED-{uuid.uuid4().hex[:12]}", "sent"
-        print(f"[sms:simulated] to={to_number} from={business.twilio_number} body={body!r}")
+        print(f"[sms:simulated] to={to_number} from={from_number} body={body!r}")
 
     message = TextMessage(
         business_id=business.id,

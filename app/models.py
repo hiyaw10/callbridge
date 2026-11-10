@@ -158,6 +158,9 @@ class Lead(Base):
     email: Mapped[str] = mapped_column(String(255))
     # Optional — required on the form is just email now; nullable so the column allows it.
     phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    # When they ticked the optional box agreeing to texts from CallBridge at the number above.
+    # NULL means they did not agree, so no texts go to this number.
+    sms_consent_at: Mapped[datetime | None] = mapped_column(nullable=True)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
     # Internal admin notes (e.g. "called, not interested", "follow up next week").
