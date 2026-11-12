@@ -85,6 +85,11 @@ async def twilio_call_status(request: Request, db: Session = Depends(get_db)):
     # SID of the dialed leg (distinct from CallSid, which is the parent/inbound call) — lets
     # a same- or later-arriving AMD result find its way back to this Call row.
     dial_call_sid = params.get("DialCallSid")
+    # Seconds the owner's leg stayed connected. Only present on the <Dial action> callback.
+    try:
+        dial_call_duration = int(params["DialCallDuration"])
+    except (KeyError, ValueError):
+        dial_call_duration = None
     to_number = params.get("To")
     from_number = params.get("From")
 
@@ -95,13 +100,14 @@ async def twilio_call_status(request: Request, db: Session = Depends(get_db)):
     call = None
     if business:
         call = handle_call_status(
-            db, business, call_sid, from_number, call_status, answered_by, dial_call_sid, request
+            db, business, call_sid, from_number, call_status, answered_by, dial_call_sid, request,
+            dial_call_duration,
         )
 
     logger.info(
         "call-status webhook: call_sid=%s dial_call_sid=%s from=%s to=%s call_status=%s "
-        "answered_by=%s business_found=%s mapped_status=%s",
-        call_sid, dial_call_sid, from_number, to_number, call_status, answered_by,
+        "dial_duration=%s answered_by=%s business_found=%s mapped_status=%s",
+        call_sid, dial_call_sid, from_number, to_number, call_status, dial_call_duration, answered_by,
         bool(business), call.status if call else None,
     )
 

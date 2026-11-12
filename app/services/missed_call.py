@@ -35,6 +35,15 @@ ANSWERED_BY_MAP = {
 }
 
 
+# A dialed leg that connected for less than this many seconds, with no human verdict from
+# Answering Machine Detection, is treated as missed. Carrier voicemail often picks up right at
+# the end of our ring window and the caller hangs up on the greeting a moment later: Twilio calls
+# that leg "completed" (answered) and AMD runs out of audio and reports "unknown", so the call
+# looked answered when nobody spoke to the owner. A real conversation lasts longer than this, and
+# a genuine human pickup is still caught by AMD's "human" verdict regardless of length.
+SHORT_PICKUP_SECONDS = 8
+
+
 def alert_owner_of_missed_call(
     db: Session, business: Business, caller_number: str, request: Request | None = None
 ) -> None:
@@ -56,6 +65,7 @@ def handle_call_status(
     answered_by: str | None = None,
     dial_call_sid: str | None = None,
     request: Request | None = None,
+    dial_call_duration: int | None = None,
 ) -> Call | None:
     existing = db.query(Call).filter(Call.twilio_call_sid == call_sid).first()
     if existing:
@@ -74,6 +84,12 @@ def handle_call_status(
     mapped_status = ANSWERED_BY_MAP.get(answered_by) if answered_by else None
     if mapped_status is None:
         mapped_status = TERMINAL_STATUS_MAP.get(twilio_call_status)
+        if (
+            mapped_status == "answered"
+            and dial_call_duration is not None
+            and dial_call_duration < SHORT_PICKUP_SECONDS
+        ):
+            mapped_status = "missed"
     if mapped_status is None:
         return None
 
