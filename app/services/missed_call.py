@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 from fastapi import Request
 from sqlalchemy.orm import Session
 
+from app.config import CALLER_TEXT_COOLDOWN_MINUTES
 from app.models import Business, Call, PendingAmdResult, SmsOptOut, TextMessage
 from app.services.sms import send_sms
 from app.services.templates import render_missed_call_message
@@ -46,10 +47,15 @@ ANSWERED_BY_MAP = {
 # a genuine human pickup is still caught by AMD's "human" verdict regardless of length.
 SHORT_PICKUP_SECONDS = 8
 
-# A caller who rings several times in a row because nobody picked up should get one text, not
-# one per attempt: repeated identical texts annoy people and get a sender flagged as spam.
-# The owner is still alerted on every missed call, since a repeat caller is usually urgent.
-CALLER_TEXT_COOLDOWN = timedelta(minutes=15)
+# ...but only when the phone also rang a long while first. Voicemail takes over after the phone has
+# rung out (calls here: ~11 and ~16 seconds of ringing), whereas a person opening the call picks up
+# within a few seconds (~4). So a short connection after a quick pickup is a real answer, however
+# brief: if you opened it, it counts as answered.
+QUICK_PICKUP_RING_SECONDS = 8
+
+# Optionally, a caller who rings several times in a row gets one text, not one per attempt
+# (CALLER_TEXT_COOLDOWN_MINUTES; off by default). The owner is alerted on every missed call.
+CALLER_TEXT_COOLDOWN = timedelta(minutes=CALLER_TEXT_COOLDOWN_MINUTES)
 
 # A number a text can actually be sent to (E.164). Withheld caller ID arrives as something like
 # "anonymous" or "+266696687", which no text can reach.
@@ -89,8 +95,7 @@ def text_missed_caller(
         .first()
     ):
         return
-    cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - CALLER_TEXT_COOLDOWN
-    already_texted = (
+    already_texted = CALLER_TEXT_COOLDOWN > timedelta(0) and (
         db.query(TextMessage.id)
         .join(Call, TextMessage.call_id == Call.id)
         .filter(
@@ -99,7 +104,7 @@ def text_missed_caller(
             Call.id != call.id,
             TextMessage.direction == "outbound",
             TextMessage.status.in_(("sent", "delivered")),
-            TextMessage.timestamp >= cutoff,
+            TextMessage.timestamp >= datetime.now(timezone.utc).replace(tzinfo=None) - CALLER_TEXT_COOLDOWN,
         )
         .first()
     )
@@ -118,6 +123,7 @@ def handle_call_status(
     dial_call_sid: str | None = None,
     request: Request | None = None,
     dial_call_duration: int | None = None,
+    ring_seconds: float | None = None,
 ) -> Call | None:
     existing = db.query(Call).filter(Call.twilio_call_sid == call_sid).first()
     if existing:
@@ -140,6 +146,7 @@ def handle_call_status(
             mapped_status == "answered"
             and dial_call_duration is not None
             and dial_call_duration < SHORT_PICKUP_SECONDS
+            and (ring_seconds is None or ring_seconds >= QUICK_PICKUP_RING_SECONDS)
         ):
             mapped_status = "missed"
     if mapped_status is None:
