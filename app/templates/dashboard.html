@@ -40,16 +40,6 @@
         </div>
       </div>
     </div>
-
-    {% if stats.missed %}
-    <div class="value-banner">
-      <p>Without CallBridge, those <strong>{{ stats.missed }}</strong> missed calls would have gone straight to voicemail. Instead, <strong>{{ stats.recovered }}</strong> of them got a text back from {{ business.name }} within seconds, so the door stayed open instead of closing.</p>
-    </div>
-    {% elif stats.calls_received %}
-    <div class="value-banner value-banner-neutral">
-      <p>No missed calls this week. Every call that came in was answered.</p>
-    </div>
-    {% endif %}
   </div>
 
   <div class="section">
