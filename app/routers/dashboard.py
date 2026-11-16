@@ -350,6 +350,7 @@ def _weekly_stats(db: Session, business: Business) -> dict:
         .filter(
             TextMessage.business_id == business.id,
             TextMessage.call_id.isnot(None),
+            TextMessage.direction == "outbound",
             TextMessage.status.in_(("sent", "delivered")),
             TextMessage.timestamp >= week_ago,
             Call.archived_at.is_(None),
@@ -364,6 +365,7 @@ def _weekly_stats(db: Session, business: Business) -> dict:
         .join(Call, Call.id == TextMessage.call_id)
         .filter(
             TextMessage.business_id == business.id,
+            TextMessage.direction == "outbound",
             TextMessage.status.in_(("sent", "delivered")),
             Call.status == "missed",
             Call.timestamp >= week_ago,

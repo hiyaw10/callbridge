@@ -10,6 +10,7 @@ from app.config import TWILIO_AUTH_TOKEN
 from app.db import get_db
 from app.models import Business, SmsOptOut, TextMessage
 from app.services.missed_call import apply_amd_result, handle_call_status
+from app.services.replies import is_owner_number, record_caller_reply, route_owner_reply
 
 logger = logging.getLogger("callbridge")
 
@@ -182,10 +183,10 @@ _START_KEYWORDS = {"start", "unstop"}
 
 @router.post("/webhooks/twilio/sms-inbound")
 async def twilio_sms_inbound(request: Request, db: Session = Depends(get_db)):
-    """"A message comes in" handler for the business's number. Scoped deliberately narrow:
-    it only tracks STOP/START keywords into SmsOptOut so the bulk-broadcast feature
-    (app/routers/dashboard.py) can honor them. It does not capture the customer's reply
-    into the call thread — that's a separate, larger feature this doesn't attempt."""
+    """"A message comes in" handler for the business's number. Tracks STOP/START keywords
+    into SmsOptOut (the missed-call text and the bulk broadcast both honor them), saves a
+    recent caller's other replies onto their call thread and forwards them to the owner, and
+    sends the owner's own texts to the customer they are answering."""
     form = await request.form()
     params = dict(form)
 
@@ -194,7 +195,8 @@ async def twilio_sms_inbound(request: Request, db: Session = Depends(get_db)):
 
     to_number = params.get("To")
     from_number = params.get("From")
-    body = (params.get("Body") or "").strip().lower()
+    raw_body = (params.get("Body") or "").strip()
+    body = raw_body.lower()
 
     business = db.query(Business).filter(Business.twilio_number == to_number).first()
     if business and from_number:
@@ -212,6 +214,21 @@ async def twilio_sms_inbound(request: Request, db: Session = Depends(get_db)):
                 SmsOptOut.business_id == business.id, SmsOptOut.phone_number == from_number
             ).delete()
             db.commit()
+        elif body != "help":
+            # HELP is left to Twilio's carrier-level handling.
+            if is_owner_number(business, from_number):
+                # The owner texting the CallBridge number is answering a customer.
+                outcome = route_owner_reply(db, business, raw_body, request)
+                logger.info("sms-inbound: owner reply to=%s outcome=%s", to_number, outcome)
+            else:
+                # A customer answering the missed-call text: save it on their call's thread
+                # and forward it to the owner.
+                recorded = record_caller_reply(
+                    db, business, from_number, raw_body, params.get("MessageSid"), request
+                )
+                logger.info(
+                    "sms-inbound: from=%s to=%s recorded_reply=%s", from_number, to_number, recorded
+                )
 
     # Empty TwiML: Twilio's own carrier-level opt-out handling (where enabled) already sends
     # the compliance confirmation reply — we don't want to double-text on top of that.
