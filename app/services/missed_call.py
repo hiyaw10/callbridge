@@ -1,7 +1,10 @@
+import re
+from datetime import datetime, timedelta, timezone
+
 from fastapi import Request
 from sqlalchemy.orm import Session
 
-from app.models import Business, Call, PendingAmdResult
+from app.models import Business, Call, PendingAmdResult, SmsOptOut, TextMessage
 from app.services.sms import send_sms
 from app.services.templates import render_missed_call_message
 
@@ -43,6 +46,19 @@ ANSWERED_BY_MAP = {
 # a genuine human pickup is still caught by AMD's "human" verdict regardless of length.
 SHORT_PICKUP_SECONDS = 8
 
+# A caller who rings several times in a row because nobody picked up should get one text, not
+# one per attempt: repeated identical texts annoy people and get a sender flagged as spam.
+# The owner is still alerted on every missed call, since a repeat caller is usually urgent.
+CALLER_TEXT_COOLDOWN = timedelta(minutes=15)
+
+# A number a text can actually be sent to (E.164). Withheld caller ID arrives as something like
+# "anonymous" or "+266696687", which no text can reach.
+_DIALABLE = re.compile(r"\+[1-9]\d{7,14}")
+
+
+def _is_dialable(number: str | None) -> bool:
+    return bool(number and _DIALABLE.fullmatch(number) and not number.startswith("+266"))
+
 
 def alert_owner_of_missed_call(
     db: Session, business: Business, caller_number: str, request: Request | None = None
@@ -52,8 +68,44 @@ def alert_owner_of_missed_call(
     customer thread on the dashboard, and this one only goes to the owner."""
     if not business.owner_phone:
         return
-    body = f"CallBridge: missed call from {caller_number}. Tap to call back. Reply STOP to opt out."
+    if _is_dialable(caller_number):
+        body = f"CallBridge: missed call from {caller_number}. Tap to call back. Reply STOP to opt out."
+    else:
+        body = "CallBridge: missed call from a blocked or unknown number. Reply STOP to opt out."
     send_sms(db, business, business.owner_phone, body, request=request, audience="owner")
+
+
+def text_missed_caller(
+    db: Session, business: Business, call: Call, request: Request | None = None
+) -> None:
+    """Sends the business's curated missed-call text to the caller, unless it would be wrong:
+    the caller's number can't receive texts, they replied STOP, or they already got a text
+    from this business within the cooldown (a repeat caller)."""
+    if not _is_dialable(call.caller_number):
+        return
+    if (
+        db.query(SmsOptOut)
+        .filter(SmsOptOut.business_id == business.id, SmsOptOut.phone_number == call.caller_number)
+        .first()
+    ):
+        return
+    cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - CALLER_TEXT_COOLDOWN
+    already_texted = (
+        db.query(TextMessage.id)
+        .join(Call, TextMessage.call_id == Call.id)
+        .filter(
+            Call.business_id == business.id,
+            Call.caller_number == call.caller_number,
+            Call.id != call.id,
+            TextMessage.direction == "outbound",
+            TextMessage.status.in_(("sent", "delivered")),
+            TextMessage.timestamp >= cutoff,
+        )
+        .first()
+    )
+    if already_texted:
+        return
+    send_sms(db, business, call.caller_number, render_missed_call_message(business), call_id=call.id, request=request)
 
 
 def handle_call_status(
@@ -108,8 +160,7 @@ def handle_call_status(
 
     if mapped_status == "missed":
         alert_owner_of_missed_call(db, business, caller_number, request)
-        body = render_missed_call_message(business)
-        send_sms(db, business, caller_number, body, call_id=call.id, request=request)
+        text_missed_caller(db, business, call, request)
 
     return call
 
@@ -139,7 +190,6 @@ def apply_amd_result(
     if new_status == "missed" and not call.text_messages:
         business = db.query(Business).filter(Business.id == call.business_id).first()
         alert_owner_of_missed_call(db, business, call.caller_number, request)
-        body = render_missed_call_message(business)
-        send_sms(db, business, call.caller_number, body, call_id=call.id, request=request)
+        text_missed_caller(db, business, call, request)
 
     return call

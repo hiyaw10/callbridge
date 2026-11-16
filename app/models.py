@@ -171,8 +171,9 @@ class Lead(Base):
 
 class SmsOptOut(Base):
     """A phone number that has texted STOP to a business's number. Checked before every
-    broadcast send; a missing row means "not opted out", not "opted in" — transactional
-    replies (missed-call text-back) aren't gated on this, only the bulk broadcast feature is."""
+    broadcast send and before every automatic missed-call text; a missing row means "not opted
+    out", not "opted in". STOP applies to everything the business's number sends, so it covers
+    the missed-call text-back too."""
 
     __tablename__ = "sms_opt_outs"
 
