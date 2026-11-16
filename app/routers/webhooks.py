@@ -1,4 +1,5 @@
 import logging
+import time
 
 from fastapi import APIRouter, Depends, Request, Response
 from fastapi.responses import PlainTextResponse
@@ -54,8 +55,12 @@ async def twilio_voice(request: Request, db: Session = Depends(get_db)):
     response = VoiceResponse()
     if business and business.owner_phone:
         base_url = str(request.base_url).rstrip("/")
+        # The call's start time rides along on the action URL so /call-status can work out how
+        # long the owner's phone rang before the leg connected (see handle_call_status).
         dial = response.dial(
-            timeout=DIAL_TIMEOUT_SECONDS, action=f"{base_url}/webhooks/twilio/call-status", method="POST"
+            timeout=DIAL_TIMEOUT_SECONDS,
+            action=f"{base_url}/webhooks/twilio/call-status?t={int(time.time())}",
+            method="POST",
         )
         dial.number(
             business.owner_phone,
@@ -91,6 +96,15 @@ async def twilio_call_status(request: Request, db: Session = Depends(get_db)):
         dial_call_duration = int(params["DialCallDuration"])
     except (KeyError, ValueError):
         dial_call_duration = None
+    # How long the owner's phone rang before the leg connected: time since the call started
+    # (stamped on this URL by /voice) minus how long the leg then stayed connected.
+    ring_seconds = None
+    try:
+        started_at = int(request.query_params["t"])
+        if dial_call_duration is not None:
+            ring_seconds = max(0.0, time.time() - started_at - dial_call_duration)
+    except (KeyError, ValueError):
+        pass
     to_number = params.get("To")
     from_number = params.get("From")
 
@@ -102,13 +116,13 @@ async def twilio_call_status(request: Request, db: Session = Depends(get_db)):
     if business:
         call = handle_call_status(
             db, business, call_sid, from_number, call_status, answered_by, dial_call_sid, request,
-            dial_call_duration,
+            dial_call_duration, ring_seconds,
         )
 
     logger.info(
         "call-status webhook: call_sid=%s dial_call_sid=%s from=%s to=%s call_status=%s "
-        "dial_duration=%s answered_by=%s business_found=%s mapped_status=%s",
-        call_sid, dial_call_sid, from_number, to_number, call_status, dial_call_duration, answered_by,
+        "dial_duration=%s ring_seconds=%s answered_by=%s business_found=%s mapped_status=%s",
+        call_sid, dial_call_sid, from_number, to_number, call_status, dial_call_duration, ring_seconds, answered_by,
         bool(business), call.status if call else None,
     )
 

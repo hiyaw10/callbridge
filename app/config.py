@@ -47,6 +47,11 @@ LEGAL_ENTITY_NAME = os.environ.get("LEGAL_ENTITY_NAME", "CallBridge")
 # each business has one. Set CUSTOMER_TEXTS_ENABLED=true to send them again.
 CUSTOMER_TEXTS_ENABLED = os.environ.get("CUSTOMER_TEXTS_ENABLED", "").lower() in ("1", "true", "yes")
 
+# Minutes during which a caller who already got the missed-call text from a business is not
+# texted again when they call back. 0 (the default) texts the caller after every missed call;
+# the owner is alerted either way.
+CALLER_TEXT_COOLDOWN_MINUTES = int(os.environ.get("CALLER_TEXT_COOLDOWN_MINUTES", "0") or 0)
+
 # The verified number owner texts are sent from. Falls back to the business's own number
 # when unset (local dev).
 OWNER_TEXT_FROM_NUMBER = os.environ.get("OWNER_TEXT_FROM_NUMBER", "")
